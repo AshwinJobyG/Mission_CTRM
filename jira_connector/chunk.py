@@ -54,6 +54,10 @@ def chunks_from_record(record: Record) -> list[Chunk]:
     url = record["provenance"].get("url", "")
     chunks: list[Chunk] = []
 
+    # Overview chunk: the structured fields (status, assignee, priority, dates,
+    # labels, links) so questions like "what is the status of X" are retrievable.
+    chunks.append(_make(key, "overview", 0, _overview_text(record), url))
+
     if record.get("summary"):
         chunks.append(_make(key, "summary", 0, record["summary"], url))
 
@@ -66,3 +70,26 @@ def chunks_from_record(record: Record) -> list[Chunk]:
             chunks.append(_make(key, f"comment-{ci}", i, piece, url))
 
     return chunks
+
+
+def _overview_text(record: Record) -> str:
+    """A compact, human-readable summary of a ticket's structured fields."""
+
+    def name(person):
+        return person.get("name") if person else "Unassigned"
+
+    links = ", ".join(f"{l.get('type')} {l.get('id')}" for l in record.get("links") or []) or "none"
+    labels = ", ".join(record.get("labels") or []) or "none"
+    lines = [
+        f"Ticket {record.get('id')}",
+        f"Summary: {record.get('summary') or '(none)'}",
+        f"Status: {record.get('status') or 'unknown'}",
+        f"Priority: {record.get('priority') or 'unknown'}",
+        f"Assignee: {name(record.get('assignee'))}",
+        f"Reporter: {name(record.get('reporter'))}",
+        f"Created: {record.get('created') or 'unknown'}",
+        f"Updated: {record.get('updated') or 'unknown'}",
+        f"Labels: {labels}",
+        f"Links: {links}",
+    ]
+    return "\n".join(lines)

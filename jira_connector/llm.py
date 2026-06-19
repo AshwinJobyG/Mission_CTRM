@@ -72,6 +72,23 @@ def _get_llm():
     return _llm
 
 
+def run_chat(system_prompt: str, user_prompt: str, model: str | None = None) -> str:
+    """Low-level single-turn chat completion against the ION LLM."""
+    llm = _get_llm()
+    if model:
+        llm = llm.bind(model=model)
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    try:
+        response = llm.invoke(messages)
+    except Exception as exc:
+        raise LLMError(f"ION LLM request failed: {exc}") from exc
+    content = getattr(response, "content", "") or ""
+    return content.strip() or "(empty response)"
+
+
 def build_context(chunks: list[Chunk]) -> str:
     """Render ranked chunks into a citable context block."""
     blocks = []
