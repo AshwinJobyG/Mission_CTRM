@@ -13,7 +13,7 @@ from .config import load_settings
 from .errors import UpstreamError
 from .fetch import _FIELDS, normalize_issue
 from .chunk import chunks_from_record
-from .jql import build_jql
+from .jql import build_jql, extract_keys
 from .rank import score_chunks
 from .schema import Chunk
 
@@ -68,6 +68,11 @@ def search(query: str, scope: dict | None = None, client: JiraClient | None = No
             updated_by_ticket[record["id"]] = record["updated"]
         all_chunks.extend(chunks_from_record(record))
 
-    ranked = score_chunks(all_chunks, query, updated_by_ticket)
+    ranked = score_chunks(
+        all_chunks,
+        query,
+        updated_by_ticket,
+        boost_tickets=set(extract_keys(query)),
+    )
     _cache.set(cache_key, ranked)
     return ranked

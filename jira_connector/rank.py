@@ -41,19 +41,32 @@ def _recency_score(updated: str | None) -> float:
     return 1.0 / (1.0 + math.log1p(days / 30.0))
 
 
+# Chunks from a ticket the user named explicitly are pinned above keyword hits.
+KEY_BOOST = 1.0
+
+
 def score_chunks(
     chunks: list[Chunk],
     query: str,
     updated_by_ticket: dict[str, str] | None = None,
+    boost_tickets: set[str] | None = None,
 ) -> list[Chunk]:
-    """Assign a blended score to each chunk and return them sorted descending."""
+    """Assign a blended score to each chunk and return them sorted descending.
+
+    ``boost_tickets`` are issue keys named explicitly in the query; their chunks
+    get a large boost so they are guaranteed to lead the results.
+    """
     terms = extract_terms(query)
     updated_by_ticket = updated_by_ticket or {}
+    boost_tickets = boost_tickets or set()
 
     for chunk in chunks:
         ticket = chunk["provenance"].get("ticket", "")
         lexical = _lexical_score(chunk["text"], terms)
         recency = _recency_score(updated_by_ticket.get(ticket))
-        chunk["score"] = round(LEXICAL_WEIGHT * lexical + RECENCY_WEIGHT * recency, 4)
+        score = LEXICAL_WEIGHT * lexical + RECENCY_WEIGHT * recency
+        if ticket in boost_tickets:
+            score += KEY_BOOST
+        chunk["score"] = round(score, 4)
 
     return sorted(chunks, key=lambda c: c["score"], reverse=True)
