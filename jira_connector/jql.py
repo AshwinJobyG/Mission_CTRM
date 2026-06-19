@@ -20,6 +20,17 @@ _STOPWORDS = {
 
 _PHRASE_RE = re.compile(r'"([^"]+)"')
 _WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+# JIRA issue keys, e.g. NGPOWER-46, CXC-1234.
+_KEY_RE = re.compile(r"\b[A-Z][A-Z0-9]+-\d+\b")
+
+
+def extract_keys(query: str) -> list[str]:
+    """Pull explicit JIRA issue keys (e.g. NGPOWER-46) from the query."""
+    seen: list[str] = []
+    for k in _KEY_RE.findall(query):
+        if k not in seen:
+            seen.append(k)
+    return seen
 
 
 def _escape(value: str) -> str:
@@ -53,10 +64,21 @@ def build_jql(query: str, scope: dict | None = None) -> str:
     scope = scope or {}
     clauses: list[str] = []
 
-    terms = extract_terms(query)
+    # Explicit issue keys are matched by key (text ~ won't find a key in the
+    # body); keep them out of the keyword text clause.
+    keys = extract_keys(query)
+    terms = [t for t in extract_terms(query) if t not in keys]
+
+    match_clauses: list[str] = []
     if terms:
         text = _escape(" ".join(terms))
-        clauses.append(f'text ~ "{text}"')
+        match_clauses.append(f'text ~ "{text}"')
+    if keys:
+        match_clauses.append(f"key IN ({_quoted_list(keys)})")
+    if match_clauses:
+        # OR the keyword and key matches so either path can satisfy the query.
+        joined = " OR ".join(match_clauses)
+        clauses.append(f"({joined})" if len(match_clauses) > 1 else joined)
 
     projects = scope.get("projects")
     if projects:
