@@ -1,0 +1,43 @@
+{
+  "key": "CXC-1234",
+  "fields": {
+    "summary": "4.8.2 build fails on pricing module",
+    "description": {
+      "type": "doc",
+      "version": 1,
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            { "type": "text", "text": "The 4.8.2 build fails during the pricing module link step. The failure started after the dependency bump and reproduces consistently on CI." }
+          ]
+        }
+      ]
+    },
+    "status": { "name": "In Progress" },
+    "assignee": { "displayName": "Jane Doe", "accountId": "5b10ac8d82e05b22cc7d4ef5" },
+    "reporter": { "displayName": "John Roe", "accountId": "5b10a2844c20165700ede21g" },
+    "priority": { "name": "High" },
+    "created": "2026-04-20T09:12:00.000+0000",
+    "updated": "2026-04-22T14:03:00.000+0000",
+    "labels": ["build-failure", "pricing"],
+    "issuelinks": [
+      { "type": { "name": "Blocks" }, "outwardIssue": { "key": "CXC-1300" } }
+    ],
+    "comment": {
+      "comments": [
+        {
+          "author": { "displayName": "Jane Doe" },
+          "created": "2026-04-21T08:00:00.000+0000",
+          "body": {
+            "type": "doc",
+            "version": 1,
+            "content": [
+              { "type": "paragraph", "content": [ { "type": "text", "text": "Reproduced on CI node 3; rollback of PR #812 fixes it." } ] }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

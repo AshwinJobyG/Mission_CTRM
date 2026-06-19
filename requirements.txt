@@ -14,3 +14,7 @@ python-docx>=1.1.0
 
 # Convenience
 python-dotenv>=1.0.0
+
+# JIRA connector tests / fixtures (PS-003)
+pytest>=8.0.0
+respx>=0.21.0
