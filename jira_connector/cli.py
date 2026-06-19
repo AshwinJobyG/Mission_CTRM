@@ -22,7 +22,7 @@ import sys
 from .errors import JiraError
 from .fetch import fetch
 from .health import health
-from .llm import OllamaError, answer
+from .llm import OllamaError, answer_stream
 from .search import search
 
 
@@ -81,12 +81,14 @@ def _answer(question: str, scope: dict, top_k: int, model: str | None) -> int:
     except JiraError as exc:
         print(f"[{exc.kind}] {exc.message}", file=sys.stderr)
         return 1
+    print()
     try:
-        reply = answer(question, chunks, model=model)
+        for token in answer_stream(question, chunks, model=model):
+            print(token, end="", flush=True)
     except OllamaError as exc:
-        print(f"[ollama] {exc}", file=sys.stderr)
+        print(f"\n[ollama] {exc}", file=sys.stderr)
         return 2
-    print("\n" + reply)
+    print()
     _print_sources(chunks)
     print()
     return 0

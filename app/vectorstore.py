@@ -24,7 +24,16 @@ class Retrieved:
     distance: float
 
 
+# Cache the Chroma collection at module scope. Building a PersistentClient
+# reopens the on-disk index; doing it per query added seconds of overhead.
+_COLLECTION = None
+
+
 def _collection():
+    global _COLLECTION
+    if _COLLECTION is not None:
+        return _COLLECTION
+
     import chromadb
     from chromadb.config import Settings
 
@@ -34,14 +43,16 @@ def _collection():
         settings=Settings(anonymized_telemetry=False, allow_reset=True),
     )
     # Distance space cosine; we provide embeddings, so no embedding function.
-    return client.get_or_create_collection(
+    _COLLECTION = client.get_or_create_collection(
         name=COLLECTION,
         metadata={"hnsw:space": "cosine"},
     )
+    return _COLLECTION
 
 
 def reset() -> None:
     """Delete and recreate the collection."""
+    global _COLLECTION
     import chromadb
     from chromadb.config import Settings
 
@@ -54,7 +65,9 @@ def reset() -> None:
         client.delete_collection(COLLECTION)
     except Exception:
         pass
-    client.get_or_create_collection(name=COLLECTION, metadata={"hnsw:space": "cosine"})
+    _COLLECTION = client.get_or_create_collection(
+        name=COLLECTION, metadata={"hnsw:space": "cosine"}
+    )
 
 
 def add_chunks(chunks: list[Chunk], batch_size: int = 64) -> int:
@@ -93,12 +106,13 @@ def count() -> int:
 
 def query(text: str, top_k: int = TOP_K) -> list[Retrieved]:
     coll = _collection()
-    if coll.count() == 0:
+    n = coll.count()
+    if n == 0:
         return []
     qvec = embed_texts([text])[0]
     res = coll.query(
         query_embeddings=[qvec],
-        n_results=min(top_k, coll.count()),
+        n_results=min(top_k, n),
         include=["documents", "metadatas", "distances"],
     )
     out: list[Retrieved] = []

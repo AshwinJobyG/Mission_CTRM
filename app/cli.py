@@ -15,13 +15,33 @@ import sys
 from . import config
 from .embeddings import OllamaError
 from .ingest import ingest_folder
-from .rag import answer_question
+from .rag import StreamingAnswer, stream_question, warm_up
 
 
-def _print_answer(ans) -> None:
-    print("\n" + ans.answer + "\n")
-    print("Sources:")
-    print(ans.format_sources())
+def _format_sources(sources) -> str:
+    if not sources:
+        return "(no sources)"
+    seen: dict[str, int] = {}
+    lines = []
+    for r in sources:
+        if r.source in seen:
+            continue
+        seen[r.source] = len(seen) + 1
+        lines.append(f"  [{seen[r.source]}] {r.source}")
+    return "\n".join(lines)
+
+
+def _print_streaming(sa: StreamingAnswer) -> None:
+    """Print tokens as they arrive, then the source list."""
+    print()
+    try:
+        for token in sa.tokens:
+            print(token, end="", flush=True)
+    except OllamaError as exc:
+        print(f"\n[error] {exc}", file=sys.stderr)
+        return
+    print("\n\nSources:")
+    print(_format_sources(sa.sources))
     print()
 
 
@@ -49,16 +69,18 @@ def cmd_ingest(args: argparse.Namespace) -> int:
 
 def cmd_ask(args: argparse.Namespace) -> int:
     try:
-        ans = answer_question(args.question, top_k=args.top_k)
+        sa = stream_question(args.question, top_k=args.top_k)
     except OllamaError as exc:
         print(f"[error] {exc}", file=sys.stderr)
         return 2
-    _print_answer(ans)
+    _print_streaming(sa)
     return 0
 
 
 def cmd_chat(args: argparse.Namespace) -> int:
     print("Knowledge assistant — type your question (Ctrl-C or 'exit' to quit).\n")
+    # Pre-load the models so the first answer isn't a cold start.
+    warm_up()
     while True:
         try:
             question = input("you> ").strip()
@@ -70,11 +92,11 @@ def cmd_chat(args: argparse.Namespace) -> int:
         if question.lower() in {"exit", "quit", ":q"}:
             return 0
         try:
-            ans = answer_question(question, top_k=args.top_k)
+            sa = stream_question(question, top_k=args.top_k)
         except OllamaError as exc:
             print(f"[error] {exc}", file=sys.stderr)
             continue
-        _print_answer(ans)
+        _print_streaming(sa)
 
 
 def build_parser() -> argparse.ArgumentParser:

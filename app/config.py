@@ -44,6 +44,15 @@ TOP_K: int = int(_env("TOP_K", "5"))                    # chunks retrieved per q
 # Request timeout (seconds) for Ollama calls.
 OLLAMA_TIMEOUT: float = float(_env("OLLAMA_TIMEOUT", "120"))
 
+# --- Performance knobs ----------------------------------------------------
+# How long Ollama keeps a model resident after a request. "30m" avoids paying
+# the model load cost on every query; "-1" keeps it loaded indefinitely.
+OLLAMA_KEEP_ALIVE: str = _env("OLLAMA_KEEP_ALIVE", "30m")
+# Cap generated tokens so the model can't ramble (also bounds latency).
+NUM_PREDICT: int = int(_env("NUM_PREDICT", "512"))
+# Context window. Smaller = faster prompt processing; must fit prompt+context.
+NUM_CTX: int = int(_env("NUM_CTX", "4096"))
+
 
 def summary() -> str:
     """Human-readable view of the active configuration."""
@@ -56,4 +65,6 @@ def summary() -> str:
         f"Collection  : {COLLECTION}\n"
         f"Chunk size  : {CHUNK_SIZE} (overlap {CHUNK_OVERLAP})\n"
         f"Top-K       : {TOP_K}\n"
+        f"Keep-alive  : {OLLAMA_KEEP_ALIVE}\n"
+        f"num_predict : {NUM_PREDICT}  num_ctx: {NUM_CTX}\n"
     )

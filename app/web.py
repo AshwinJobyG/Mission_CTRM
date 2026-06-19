@@ -11,7 +11,7 @@ import streamlit as st
 from . import config, vectorstore
 from .embeddings import OllamaError
 from .ingest import ingest_folder
-from .rag import answer_question
+from .rag import stream_question, warm_up
 
 st.set_page_config(page_title="Enterprise Knowledge Assistant", page_icon="🧠", layout="wide")
 
@@ -43,6 +43,11 @@ with st.sidebar:
 
 if "history" not in st.session_state:
     st.session_state.history = []
+    # Warm the models once per session so the first answer isn't a cold start.
+    try:
+        warm_up()
+    except Exception:
+        pass
 
 # Replay chat history.
 for turn in st.session_state.history:
@@ -60,23 +65,24 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Retrieving context and generating answer..."):
-            try:
-                ans = answer_question(prompt, top_k=top_k)
-                st.markdown(ans.answer)
-                source_lines = []
-                seen = set()
-                for i, r in enumerate(ans.sources, 1):
-                    if r.source in seen:
-                        continue
-                    seen.add(r.source)
-                    source_lines.append(f"- **[{len(seen)}]** `{r.source}` (distance {r.distance:.3f})")
-                if source_lines:
-                    with st.expander("Sources"):
-                        for line in source_lines:
-                            st.markdown(line)
-                st.session_state.history.append(
-                    {"role": "assistant", "content": ans.answer, "sources": source_lines}
-                )
-            except OllamaError as exc:
-                st.error(str(exc))
+        try:
+            with st.spinner("Retrieving context..."):
+                sa = stream_question(prompt, top_k=top_k)
+            # Stream the answer token-by-token for fast time-to-first-token.
+            answer_text = st.write_stream(sa.tokens)
+            source_lines = []
+            seen = set()
+            for r in sa.sources:
+                if r.source in seen:
+                    continue
+                seen.add(r.source)
+                source_lines.append(f"- **[{len(seen)}]** `{r.source}` (distance {r.distance:.3f})")
+            if source_lines:
+                with st.expander("Sources"):
+                    for line in source_lines:
+                        st.markdown(line)
+            st.session_state.history.append(
+                {"role": "assistant", "content": answer_text, "sources": source_lines}
+            )
+        except OllamaError as exc:
+            st.error(str(exc))
