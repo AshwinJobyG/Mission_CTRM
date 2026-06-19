@@ -93,7 +93,23 @@ class JiraClient:
         try:
             body = resp.json()
         except ValueError:
-            body = None
+            # A 2xx with a non-JSON body almost always means an SSO/login HTML
+            # page or a wrong base URL/API version — i.e. the request never
+            # actually authenticated. Surface that clearly instead of returning
+            # None and crashing downstream.
+            text = (resp.text or "").strip()
+            if not text:
+                body = None
+            else:
+                ctype = resp.headers.get("content-type", "?")
+                snippet = " ".join(text[:160].split())
+                raise UpstreamError(
+                    "JIRA returned a non-JSON response "
+                    f"(HTTP {resp.status_code}, content-type {ctype}). This usually "
+                    "means an SSO/login redirect (auth not accepted) or a wrong "
+                    f"JIRA_BASE_URL / JIRA_AUTH_MODE. First bytes: {snippet!r}",
+                    status=resp.status_code,
+                )
         return Response(json=body, status=resp.status_code, elapsed_ms=elapsed_ms)
 
 
