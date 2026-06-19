@@ -10,6 +10,7 @@ from __future__ import annotations
 from .cache import TTLCache
 from .client import JiraClient, get_client
 from .config import load_settings
+from .errors import UpstreamError
 from .fetch import _FIELDS, normalize_issue
 from .chunk import chunks_from_record
 from .jql import build_jql
@@ -18,6 +19,23 @@ from .schema import Chunk
 
 _cache = TTLCache(ttl_seconds=60.0)
 _FIELD_LIST = _FIELDS.split(",")
+
+
+def _run_search(client: JiraClient, body: dict, api_version: str):
+    """POST a JQL search, using the right endpoint for the JIRA flavor.
+
+    JIRA Cloud removed the legacy POST /rest/api/3/search (now 410 Gone) in
+    favour of the enhanced POST /rest/api/3/search/jql. Server/DC (v2) still
+    uses /search. We pick by version and fall back if the instance differs.
+    """
+    primary = "/search/jql" if api_version == "3" else "/search"
+    secondary = "/search" if primary == "/search/jql" else "/search/jql"
+    try:
+        return client.post(primary, json=body)
+    except UpstreamError as exc:
+        if exc.status in (404, 410):
+            return client.post(secondary, json=body)
+        raise
 
 
 def search(query: str, scope: dict | None = None, client: JiraClient | None = None) -> list[Chunk]:
@@ -34,11 +52,10 @@ def search(query: str, scope: dict | None = None, client: JiraClient | None = No
     if cached is not None:
         return cached
 
-    # NOTE: POST /search works on Server v2 and most Cloud instances. Newest
-    # JIRA Cloud is migrating to POST /search/jql — swap the path here if needed.
-    resp = client.post(
-        "/search",
-        json={"jql": jql, "fields": _FIELD_LIST, "maxResults": max_results},
+    resp = _run_search(
+        client,
+        {"jql": jql, "fields": _FIELD_LIST, "maxResults": max_results},
+        settings.api_version,
     )
 
     issues = (resp.json or {}).get("issues", [])
