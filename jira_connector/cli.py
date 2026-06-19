@@ -5,12 +5,12 @@ Direct connector calls:
     python -m jira_connector.cli fetch CXC-1234
     python -m jira_connector.cli search "build failure" --project CXC --status Open
 
-ION-LLM-backed RAG over JIRA (answers grounded in ticket context, with citations):
+Ollama-backed RAG over JIRA (answers grounded in ticket context, with citations):
     python -m jira_connector.cli ask "latest on the CXC 4.8.2 build failure" --project CXC
     python -m jira_connector.cli chat --project CXC          # interactive loop
 
-`ask`/`chat` use the company-hosted ION LLM — set ION_LLM_API_URL / ION_LLM_API_KEY /
-ION_LLM_MODEL in the environment (see .env.jira.example).
+Requires a local Ollama for `ask`/`chat`:
+    ollama serve && ollama pull llama3
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ import sys
 from .errors import JiraError
 from .fetch import fetch
 from .health import health
-from .llm import LLMError, answer
+from .llm import OllamaError, answer
 from .search import search
 
 
@@ -83,8 +83,8 @@ def _answer(question: str, scope: dict, top_k: int, model: str | None) -> int:
         return 1
     try:
         reply = answer(question, chunks, model=model)
-    except LLMError as exc:
-        print(f"[llm] {exc}", file=sys.stderr)
+    except OllamaError as exc:
+        print(f"[ollama] {exc}", file=sys.stderr)
         return 2
     print("\n" + reply)
     _print_sources(chunks)
