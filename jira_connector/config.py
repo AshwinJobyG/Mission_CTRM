@@ -41,11 +41,25 @@ class Settings:
     timeout_ms: int
     degraded_ms: int
     max_results: int
+    verify_ssl: bool
+    ca_bundle: str | None
 
     @property
     def api_version(self) -> str:
         """JIRA Cloud uses REST v3; Server/DC uses v2."""
         return "3" if self.auth_mode == "cloud" else "2"
+
+    @property
+    def verify(self) -> bool | str:
+        """Value for httpx's ``verify``: a CA bundle path, or True/False.
+
+        - JIRA_CA_BUNDLE set  -> verify against that CA bundle (recommended).
+        - JIRA_VERIFY_SSL=false -> disable verification (self-signed/internal CA).
+        - otherwise            -> verify with system CAs.
+        """
+        if self.ca_bundle:
+            return self.ca_bundle
+        return self.verify_ssl
 
     @property
     def api_base(self) -> str:
@@ -92,6 +106,9 @@ def load_settings() -> Settings:
     if degraded_ms >= timeout_ms:
         raise ConfigError("JIRA_DEGRADED_MS must be less than JIRA_TIMEOUT_MS.")
 
+    verify_ssl = (_env("JIRA_VERIFY_SSL", "true") or "true").lower() not in {"false", "0", "no"}
+    ca_bundle = _env("JIRA_CA_BUNDLE")
+
     return Settings(
         base_url=base_url,
         auth_mode=auth_mode,
@@ -101,4 +118,6 @@ def load_settings() -> Settings:
         timeout_ms=timeout_ms,
         degraded_ms=degraded_ms,
         max_results=max_results,
+        verify_ssl=verify_ssl,
+        ca_bundle=ca_bundle,
     )

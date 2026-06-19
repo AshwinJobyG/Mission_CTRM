@@ -38,10 +38,17 @@ class JiraClient:
             "Content-Type": "application/json",
             **build_auth_header(self.settings),
         }
+        verify = self.settings.verify
+        if verify is False:
+            # Silence urllib3/httpx noise when TLS verification is intentionally off.
+            import warnings
+
+            warnings.filterwarnings("ignore", message="Unverified HTTPS request")
         self._http = httpx.Client(
             base_url=self.settings.api_base,
             headers=headers,
             timeout=self.settings.timeout_s,
+            verify=verify,
         )
 
     def close(self) -> None:
