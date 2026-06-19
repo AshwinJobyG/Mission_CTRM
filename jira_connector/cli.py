@@ -22,7 +22,7 @@ import json
 import sys
 
 from . import rag, vectorstore
-from .embeddings import EmbeddingError
+from .embeddings import EmbeddingError, check as embed_check
 from .errors import JiraError
 from .fetch import fetch
 from .health import health
@@ -66,6 +66,15 @@ def cmd_search(args: argparse.Namespace) -> int:
         prov = c["provenance"]
         print(f"[{c['score']:.3f}] {c['chunk_id']} ({prov['ticket']}/{prov['field']})")
         print(f"      {c['text'][:120]}...")
+    return 0
+
+
+def cmd_embed_check(_: argparse.Namespace) -> int:
+    try:
+        print(embed_check())
+    except EmbeddingError as exc:
+        print(f"[embeddings] {exc}", file=sys.stderr)
+        return 2
     return 0
 
 
@@ -143,6 +152,8 @@ def build_parser() -> argparse.ArgumentParser:
     ps.add_argument("--status", action="append")
     ps.add_argument("--max-results", type=int, dest="max_results", default=None)
     ps.set_defaults(func=cmd_search)
+
+    sub.add_parser("embed-check", help="Test the configured embeddings backend").set_defaults(func=cmd_embed_check)
 
     pi = sub.add_parser("index", help="Build the vector DB from JIRA tickets")
     pi.add_argument("--project", action="append", help="Project key to index (repeatable)")
