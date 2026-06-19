@@ -7,7 +7,13 @@ from typing import Sequence
 
 import httpx
 
-from .config import EMBED_MODEL, OLLAMA_HOST, OLLAMA_KEEP_ALIVE, OLLAMA_TIMEOUT
+from .config import (
+    EMBED_MODEL,
+    OLLAMA_CONNECT_TIMEOUT,
+    OLLAMA_HOST,
+    OLLAMA_KEEP_ALIVE,
+    OLLAMA_TIMEOUT,
+)
 
 
 class OllamaError(RuntimeError):
@@ -22,7 +28,10 @@ _CLIENT: httpx.Client | None = None
 def _client() -> httpx.Client:
     global _CLIENT
     if _CLIENT is None:
-        _CLIENT = httpx.Client(base_url=OLLAMA_HOST, timeout=OLLAMA_TIMEOUT)
+        # Short connect timeout (fail fast if the server is down) but a long
+        # read timeout to allow for model load + generation.
+        timeout = httpx.Timeout(OLLAMA_TIMEOUT, connect=OLLAMA_CONNECT_TIMEOUT)
+        _CLIENT = httpx.Client(base_url=OLLAMA_HOST, timeout=timeout)
         atexit.register(_CLIENT.close)
     return _CLIENT
 

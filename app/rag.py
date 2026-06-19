@@ -100,7 +100,10 @@ def _chat(messages: list[dict], model: str) -> str:
         resp.raise_for_status()
     except httpx.HTTPError as exc:
         raise OllamaError(
-            f"Failed to reach Ollama chat API at {OLLAMA_HOST}: {exc}"
+            f"Failed to reach Ollama chat API at {OLLAMA_HOST}: {exc}. "
+            "If this is a timeout, the model is likely cold-starting — make sure "
+            f"`ollama serve` is running and `{CHAT_MODEL}` is pulled, or raise "
+            "OLLAMA_TIMEOUT / use a smaller CHAT_MODEL."
         ) from exc
     data = resp.json()
     return (data.get("message") or {}).get("content", "").strip()
@@ -123,7 +126,10 @@ def _chat_stream(messages: list[dict], model: str) -> Iterator[str]:
                     yield piece
     except httpx.HTTPError as exc:
         raise OllamaError(
-            f"Failed to reach Ollama chat API at {OLLAMA_HOST}: {exc}"
+            f"Failed to reach Ollama chat API at {OLLAMA_HOST}: {exc}. "
+            "If this is a timeout, the model is likely cold-starting — make sure "
+            f"`ollama serve` is running and `{CHAT_MODEL}` is pulled, or raise "
+            "OLLAMA_TIMEOUT / use a smaller CHAT_MODEL."
         ) from exc
 
 

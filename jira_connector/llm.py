@@ -6,7 +6,7 @@ model and gets back a cited answer. Config via env:
 
     OLLAMA_HOST        (default http://localhost:11434)
     CHAT_MODEL         (default llama3)
-    OLLAMA_TIMEOUT     (default 120 seconds)
+    OLLAMA_TIMEOUT     (default 300 seconds — read budget for load+generation)
     OLLAMA_KEEP_ALIVE  (default 30m — keeps the model resident between queries)
     NUM_PREDICT        (default 512 — cap on generated tokens)
     NUM_CTX            (default 4096 — context window)
@@ -25,7 +25,8 @@ from .schema import Chunk
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
 CHAT_MODEL = os.environ.get("CHAT_MODEL") or "llama3"
-OLLAMA_TIMEOUT = float(os.environ.get("OLLAMA_TIMEOUT") or "120")
+OLLAMA_TIMEOUT = float(os.environ.get("OLLAMA_TIMEOUT") or "300")
+OLLAMA_CONNECT_TIMEOUT = float(os.environ.get("OLLAMA_CONNECT_TIMEOUT") or "10")
 OLLAMA_KEEP_ALIVE = os.environ.get("OLLAMA_KEEP_ALIVE") or "30m"
 NUM_PREDICT = int(os.environ.get("NUM_PREDICT") or "512")
 NUM_CTX = int(os.environ.get("NUM_CTX") or "4096")
@@ -52,7 +53,8 @@ _CLIENT: httpx.Client | None = None
 def _client() -> httpx.Client:
     global _CLIENT
     if _CLIENT is None:
-        _CLIENT = httpx.Client(base_url=OLLAMA_HOST, timeout=OLLAMA_TIMEOUT)
+        timeout = httpx.Timeout(OLLAMA_TIMEOUT, connect=OLLAMA_CONNECT_TIMEOUT)
+        _CLIENT = httpx.Client(base_url=OLLAMA_HOST, timeout=timeout)
         atexit.register(_CLIENT.close)
     return _CLIENT
 

@@ -41,8 +41,13 @@ CHUNK_SIZE: int = int(_env("CHUNK_SIZE", "1000"))      # characters per chunk
 CHUNK_OVERLAP: int = int(_env("CHUNK_OVERLAP", "150"))  # overlap between chunks
 TOP_K: int = int(_env("TOP_K", "5"))                    # chunks retrieved per query
 
-# Request timeout (seconds) for Ollama calls.
-OLLAMA_TIMEOUT: float = float(_env("OLLAMA_TIMEOUT", "120"))
+# Request timeout (seconds) for Ollama calls. This is the *read* budget — how
+# long to wait for the model to load and generate. Cold-starting a large model
+# on CPU can take a while, so keep this generous.
+OLLAMA_TIMEOUT: float = float(_env("OLLAMA_TIMEOUT", "300"))
+# Separate, short connect timeout so an unreachable server fails fast instead
+# of waiting the full read budget.
+OLLAMA_CONNECT_TIMEOUT: float = float(_env("OLLAMA_CONNECT_TIMEOUT", "10"))
 
 # --- Performance knobs ----------------------------------------------------
 # How long Ollama keeps a model resident after a request. "30m" avoids paying
