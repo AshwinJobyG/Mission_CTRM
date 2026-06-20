@@ -84,34 +84,61 @@ SYSTEM_PROMPT = (
     "determined). Output only the JSON object."
 )
 
+# Appended only for causal ("why") questions, when Stage 3.5 has already traced
+# the path. The model NARRATES the traced chain — it does not re-derive it.
+CAUSAL_SYSTEM_ADDENDUM = (
+    "\n\nThis is a CAUSAL question. A CAUSAL PATH has already been traced from "
+    "the knowledge graph and is provided below the context map. Your job is to "
+    "NARRATE that specific chain from root cause to impact in prose.\n"
+    "Additional rules:\n"
+    "6. Follow the traced path exactly. Do NOT introduce any causal link that is "
+    "not in the provided path.\n"
+    "7. For every step, cite the step's node IDs and quote/reference the evidence "
+    "passage attached to that step.\n"
+    "8. Name the people on the path by their role (who raised the risk, who made "
+    "the call, who owned the code) where the path identifies them."
+)
 
-def synthesize_decision(G: nx.DiGraph, query: str) -> DecisionResult:
+
+def synthesize_decision(G: nx.DiGraph, query: str, *, causal_path=None) -> DecisionResult:
     """Produce a grounded, cited decision over the context map.
 
     Backend selection (env ``KGCE_LLM_BACKEND``, default ``auto``):
       auto -> ion (company-hosted, OpenAI-compatible) if configured,
               else anthropic if ANTHROPIC_API_KEY set, else extractive.
     Any backend failure falls through to the deterministic extractive fallback.
+
+    ``causal_path`` (Stage 3.5): when present, THINK narrates that traced chain
+    and cites the evidence on each step. When absent, behaviour is unchanged.
     """
     backend = os.environ.get("KGCE_LLM_BACKEND", "auto").lower()
     order = ["ion", "anthropic", "extractive"] if backend == "auto" else [backend]
     for b in order:
         try:
             if b == "ion" and _ion_configured():
-                return _synthesize_ion(G, query)
+                return _synthesize_ion(G, query, causal_path)
             if b == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
-                return _synthesize_anthropic(G, query)
+                return _synthesize_anthropic(G, query, causal_path)
             if b == "extractive":
-                return _synthesize_extractive(G, query)
+                return _synthesize_extractive(G, query, causal_path)
         except Exception as exc:  # network/SDK error -> fall back, but be loud
             print(f"[decision] {b} backend failed ({type(exc).__name__}: {exc}); "
                   "falling through.")
-    return _synthesize_extractive(G, query)
+    return _synthesize_extractive(G, query, causal_path)
 
 
-def build_messages(G: nx.DiGraph, query: str) -> tuple[str, str]:
-    """Shared (system, user) prompt for every LLM backend."""
+def build_messages(G: nx.DiGraph, query: str, causal_path=None) -> tuple[str, str]:
+    """Shared (system, user) prompt for every LLM backend.
+
+    For causal queries the traced path is prepended as the spine and the system
+    prompt gains the narration constraints; factual queries are unchanged.
+    """
     context = serialize_context_map(G)
+    if causal_path:
+        system = SYSTEM_PROMPT + CAUSAL_SYSTEM_ADDENDUM
+        user = (f"QUESTION: {query}\n\nCONTEXT MAP:\n{context}\n\n"
+                f"{causal_path.render()}")
+        return system, user
     return SYSTEM_PROMPT, f"QUESTION: {query}\n\nCONTEXT MAP:\n{context}"
 
 
@@ -123,11 +150,11 @@ def _result_from_text(G, text: str, method: str) -> DecisionResult:
     return _finalize(G, decision_text, cited, gaps, method=method)
 
 
-def _synthesize_anthropic(G: nx.DiGraph, query: str) -> DecisionResult:
+def _synthesize_anthropic(G: nx.DiGraph, query: str, causal_path=None) -> DecisionResult:
     from anthropic import Anthropic
 
     client = Anthropic()
-    system, user = build_messages(G, query)
+    system, user = build_messages(G, query, causal_path)
     msg = client.messages.create(
         model=MODEL, max_tokens=1024, system=system,
         messages=[{"role": "user", "content": user}],
@@ -161,17 +188,24 @@ def _ion_client():
     )
 
 
-def _synthesize_ion(G: nx.DiGraph, query: str) -> DecisionResult:
+def _synthesize_ion(G: nx.DiGraph, query: str, causal_path=None) -> DecisionResult:
     llm = _ion_client()
-    system, user = build_messages(G, query)
+    system, user = build_messages(G, query, causal_path)
     resp = llm.invoke([{"role": "system", "content": system},
                        {"role": "user", "content": user}])
     text = resp.content if isinstance(resp.content, str) else str(resp.content)
     return _result_from_text(G, text, "ion-llm")
 
 
-def _synthesize_extractive(G: nx.DiGraph, query: str) -> DecisionResult:
-    """Deterministic, grounded fallback: rank support by structural signal."""
+def _synthesize_extractive(G: nx.DiGraph, query: str, causal_path=None) -> DecisionResult:
+    """Deterministic, grounded fallback: rank support by structural signal.
+
+    For a causal query with a traced path, narrate that path step-by-step with
+    per-step evidence citations (so the offline/default demo also shows the
+    "traversal finds it, narration cites it" behaviour).
+    """
+    if causal_path:
+        return _synthesize_extractive_causal(G, query, causal_path)
     if not G:
         return DecisionResult("No context could be retrieved for this query.", [], [],
                               method="extractive")
@@ -207,6 +241,49 @@ def _synthesize_extractive(G: nx.DiGraph, query: str) -> DecisionResult:
 
     gaps = _structural_gaps(G)
     return _finalize(G, "\n".join(lines), support, gaps, method="extractive")
+
+
+def _synthesize_extractive_causal(G: nx.DiGraph, query: str, causal_path) -> DecisionResult:
+    """Narrate the traced causal path deterministically, citing per-step evidence.
+
+    Every line carries bracketed [ID] citations for the step's nodes and its
+    evidence source, so the narration is grounded in — and only in — the path
+    the traversal already found. Uncited free-association is structurally
+    impossible here: the lines ARE the traced edges.
+    """
+    entry = causal_path.entry
+    rc = ", ".join(f"[{r}]" for r in causal_path.root_causes) or "the traced origin"
+    lines = [
+        f"This was assessed by tracing the causal chain from the impact [{entry}] "
+        f"back through the knowledge graph to its root cause(s): {rc}."
+    ]
+    for i, s in enumerate(causal_path.steps, 1):
+        if s.evidence:
+            ev = f' Evidence [{s.evidence[0]}]: "{s.evidence[1]}"'
+        else:
+            ev = " Evidence: MISSING for this step (a gap)."
+        lines.append(
+            f"{i}. [{s.src}] --{s.rel}--> [{s.target}] "
+            f"({s.target_type}: {s.target_title}).{ev}"
+        )
+    # Persona accountability (who raised the risk / made the call / owned the code).
+    role_phrase = {
+        "raised_risk": "the risk was raised by",
+        "made_the_call": "the decision was made by",
+        "owned_the_code": "the dropped safeguard was owned by",
+    }
+    if causal_path.personas:
+        acc = "; ".join(
+            f"{role_phrase.get(role, role)} [{nid}]"
+            for role, nid in causal_path.personas.items()
+        )
+        lines.append(f"Accountability: {acc}.")
+
+    cited = [n for n in causal_path.context_ids() if n in G.nodes]
+    gaps = _structural_gaps(G)
+    gaps += [f"Causal step [{s.src}]--{s.rel}-->[{s.target}] has no evidence."
+             for s in causal_path.unevidenced]
+    return _finalize(G, "\n".join(lines), cited, gaps, method="extractive-causal")
 
 
 def _structural_gaps(G: nx.DiGraph) -> list[str]:
