@@ -41,9 +41,26 @@ deferred to a final phase.
 
 ```bash
 pip install -r requirements.txt
-# decision synthesis (Phase 4+) reads the API key from the environment:
-export ANTHROPIC_API_KEY=...      # never hardcoded
+cp .env.example .env              # then fill in your LLM credentials
 ```
+
+### Decision-synthesis backend (Phase 4)
+
+`synthesize_decision()` selects a backend via `KGCE_LLM_BACKEND` (default `auto`):
+**ion → anthropic → extractive**. All credentials are read from the environment;
+nothing is hardcoded, and any backend error degrades gracefully to the
+deterministic extractive fallback (so the pipeline always runs).
+
+- **Company-hosted LLM (ION)** — preferred when configured. Set
+  `ION_LLM_API_URL`, `ION_LLM_API_KEY`, `ION_LLM_MODEL` (optionally
+  `KGCE_ION_MAX_TOKENS`, `KGCE_ION_VERIFY_SSL`). It uses `langchain_openai`
+  against the `{ION_LLM_API_URL}/v1` OpenAI-compatible endpoint with an
+  SSL-relaxed `httpx` client — matching the provided integration script.
+- **Anthropic** — used only if ION is not configured and `ANTHROPIC_API_KEY` is set.
+- **Extractive** — deterministic, no network; used when no LLM is configured.
+
+The same JSON-structured, grounded, cite-every-claim, no-self-reported-confidence
+prompt is sent to whichever LLM backend is active.
 
 ### Embedding backend note
 

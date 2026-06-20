@@ -86,36 +86,88 @@ SYSTEM_PROMPT = (
 
 
 def synthesize_decision(G: nx.DiGraph, query: str) -> DecisionResult:
-    """Produce a grounded, cited decision over the context map."""
-    if os.environ.get("ANTHROPIC_API_KEY"):
+    """Produce a grounded, cited decision over the context map.
+
+    Backend selection (env ``KGCE_LLM_BACKEND``, default ``auto``):
+      auto -> ion (company-hosted, OpenAI-compatible) if configured,
+              else anthropic if ANTHROPIC_API_KEY set, else extractive.
+    Any backend failure falls through to the deterministic extractive fallback.
+    """
+    backend = os.environ.get("KGCE_LLM_BACKEND", "auto").lower()
+    order = ["ion", "anthropic", "extractive"] if backend == "auto" else [backend]
+    for b in order:
         try:
-            return _synthesize_anthropic(G, query)
+            if b == "ion" and _ion_configured():
+                return _synthesize_ion(G, query)
+            if b == "anthropic" and os.environ.get("ANTHROPIC_API_KEY"):
+                return _synthesize_anthropic(G, query)
+            if b == "extractive":
+                return _synthesize_extractive(G, query)
         except Exception as exc:  # network/SDK error -> fall back, but be loud
-            print(f"[decision] Anthropic call failed ({type(exc).__name__}: {exc}); "
-                  "using extractive fallback.")
+            print(f"[decision] {b} backend failed ({type(exc).__name__}: {exc}); "
+                  "falling through.")
     return _synthesize_extractive(G, query)
+
+
+def build_messages(G: nx.DiGraph, query: str) -> tuple[str, str]:
+    """Shared (system, user) prompt for every LLM backend."""
+    context = serialize_context_map(G)
+    return SYSTEM_PROMPT, f"QUESTION: {query}\n\nCONTEXT MAP:\n{context}"
+
+
+def _result_from_text(G, text: str, method: str) -> DecisionResult:
+    data = _parse_json(text)
+    decision_text = data.get("decision_text", text)
+    cited = data.get("cited_node_ids") or NODE_ID_RE.findall(decision_text)
+    gaps = data.get("noted_gaps", [])
+    return _finalize(G, decision_text, cited, gaps, method=method)
 
 
 def _synthesize_anthropic(G: nx.DiGraph, query: str) -> DecisionResult:
     from anthropic import Anthropic
 
     client = Anthropic()
-    context = serialize_context_map(G)
+    system, user = build_messages(G, query)
     msg = client.messages.create(
-        model=MODEL,
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=[{
-            "role": "user",
-            "content": f"QUESTION: {query}\n\nCONTEXT MAP:\n{context}",
-        }],
+        model=MODEL, max_tokens=1024, system=system,
+        messages=[{"role": "user", "content": user}],
     )
     text = "".join(block.text for block in msg.content if block.type == "text")
-    data = _parse_json(text)
-    decision_text = data.get("decision_text", text)
-    cited = data.get("cited_node_ids") or NODE_ID_RE.findall(decision_text)
-    gaps = data.get("noted_gaps", [])
-    return _finalize(G, decision_text, cited, gaps, method="anthropic")
+    return _result_from_text(G, text, "anthropic")
+
+
+# ---- company-hosted, OpenAI-compatible LLM (ION) ----------------------------
+
+def _ion_configured() -> bool:
+    return all(os.environ.get(k) for k in
+               ("ION_LLM_API_URL", "ION_LLM_API_KEY", "ION_LLM_MODEL"))
+
+
+def _ion_client():
+    """ChatOpenAI pointed at the company-hosted endpoint (mirrors the supplied
+    integration script: /v1 base, SSL verification configurable)."""
+    import httpx
+    from langchain_openai import ChatOpenAI
+
+    base = os.environ["ION_LLM_API_URL"].rstrip("/")
+    verify = os.environ.get("KGCE_ION_VERIFY_SSL", "false").lower() in ("1", "true", "yes")
+    return ChatOpenAI(
+        base_url=f"{base}/v1",
+        api_key=os.environ["ION_LLM_API_KEY"],
+        model=os.environ["ION_LLM_MODEL"],
+        max_tokens=int(os.environ.get("KGCE_ION_MAX_TOKENS", "4000")),
+        temperature=0,
+        http_client=httpx.Client(verify=verify),
+    )
+
+
+def _synthesize_ion(G: nx.DiGraph, query: str) -> DecisionResult:
+    llm = _ion_client()
+    system, user = build_messages(G, query)
+    resp = llm.invoke([{"role": "system", "content": system},
+                       {"role": "user", "content": user}])
+    text = resp.content if isinstance(resp.content, str) else str(resp.content)
+    return _result_from_text(G, text, "ion-llm")
 
 
 def _synthesize_extractive(G: nx.DiGraph, query: str) -> DecisionResult:

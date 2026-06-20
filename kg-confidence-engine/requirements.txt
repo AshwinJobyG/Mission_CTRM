@@ -11,7 +11,8 @@ sentence-transformers>=2.2.0   # intended embedder (all-MiniLM-L6-v2)
 networkx>=3.0
 
 # Phase 4: decision synthesis
-anthropic>=0.40
+anthropic>=0.40                 # optional: Anthropic backend
+langchain-openai>=0.2          # optional: company-hosted OpenAI-compatible (ION) backend
 
 # Phase 5/7: eval + plots
 matplotlib>=3.7   # numpy already pulled in above
