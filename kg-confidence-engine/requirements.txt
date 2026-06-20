@@ -1,6 +1,7 @@
 # kg-confidence-engine — dependencies grow phase by phase.
 
 # Phase 1: corpus (stdlib only)
+python-dotenv>=1.0             # auto-loads .env for credentials
 
 # Phase 2: retrieval
 numpy>=1.24
