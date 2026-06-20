@@ -159,7 +159,54 @@ restricted vendor RCA `RES-13` corroborates the root cause and only the lead can
 see it. This is the access requirement and a confidence-from-structure result in
 one demo beat.
 
-*(Calibration/ECE and thesis-validation results land in Phase 7.)*
+### Calibration + thesis validation (Phase 7)
+
+90 conditions = 10 queries × {intern, engineer, lead} × n_seeds {6, 8, 10}.
+Correctness is labeled by keyed gold-term recall in the decision (role-adaptive;
+an LLM-as-judge replaces it when `ANTHROPIC_API_KEY` is set). This is the
+intellectual core: confidence is computed from structure only (never sees the
+gold), correctness is content-only (never sees the structure), so their
+correlation is a genuine test of the thesis, not a tautology.
+
+**Calibration** (`data/calibration.png`):
+
+| confidence bin | count | mean conf | observed accuracy |
+|---|---|---|---|
+| [0.2, 0.4] | 36 | 0.249 | 0.000 |
+| [0.4, 0.6] | 21 | 0.513 | 0.810 |
+| [0.6, 0.8] | 33 | 0.670 | 0.848 |
+
+**ECE = 0.234.** The score *ranks* correctness very well (monotonic: low conf →
+0% right, high conf → ~85% right) but is **underconfident in the mid-range** —
+absolute calibration is imperfect because the feature weights are hand-set.
+Learned calibration (Platt/isotonic) is the deferred final-phase improvement;
+reported honestly here rather than hidden.
+
+**Thesis validation — does subgraph structure predict correctness?**
+(`data/thesis_validation.png`)
+
+| signal | Pearson r with correctness |
+|---|---|
+| **confidence (composite)** | **+0.797** |
+| sufficiency | +0.707 |
+| corroboration | +0.667 |
+| contradiction_free | −0.025 |
+| source_tier | −0.242 |
+| coverage_ok | −0.494 |
+| freshness | −0.650 |
+
+Dense vs sparse subgraphs (split on corroboration + sufficiency):
+**accuracy 0.75 (dense) vs 0.00 (sparse).**
+
+**Honest finding.** The thesis holds strongly for the *density* of corroboration
+(corroboration r=+0.67, sufficiency r=+0.71) and for the composite confidence
+score (**r=+0.80**). It does **not** hold for per-node quality features in
+isolation: freshness/tier correlate *negatively* with correctness — a real
+confound, because a thin subgraph (e.g. an intern left with two generic docs)
+has high per-node freshness yet is wrong for lack of corroboration. The lesson:
+**you cannot judge a subgraph by how fresh/authoritative its individual nodes
+are; you must judge its corroboration structure** — which is exactly what the
+sufficiency-gated confidence model does.
 
 ## Out of scope (named deliberately)
 
