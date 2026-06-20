@@ -1,0 +1,320 @@
+{
+  "k": 5,
+  "embedding_backend": "hashing-tfidf",
+  "results": {
+    "keyword": {
+      "name": "keyword (BM25)",
+      "p_at_k": 0.34,
+      "r_at_k": 0.5
+    },
+    "embedding": {
+      "name": "embedding (hashing-tfidf)",
+      "p_at_k": 0.38,
+      "r_at_k": 0.55
+    },
+    "hybrid": {
+      "name": "hybrid (RRF)",
+      "p_at_k": 0.36,
+      "r_at_k": 0.5167
+    }
+  },
+  "per_query": {
+    "keyword": [
+      {
+        "id": "Q1",
+        "p_at_k": 0.4,
+        "r_at_k": 0.4,
+        "hits": [
+          "JIRA-4399",
+          "RES-12"
+        ],
+        "n_relevant": 5
+      },
+      {
+        "id": "Q2",
+        "p_at_k": 0.4,
+        "r_at_k": 0.5,
+        "hits": [
+          "JIRA-4412",
+          "RES-12"
+        ],
+        "n_relevant": 4
+      },
+      {
+        "id": "Q3",
+        "p_at_k": 0.2,
+        "r_at_k": 0.167,
+        "hits": [
+          "INC-1001"
+        ],
+        "n_relevant": 6
+      },
+      {
+        "id": "Q4",
+        "p_at_k": 0.2,
+        "r_at_k": 0.333,
+        "hits": [
+          "JIRA-4415"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q5",
+        "p_at_k": 0.4,
+        "r_at_k": 0.667,
+        "hits": [
+          "CMT-08",
+          "JIRA-4390"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q6",
+        "p_at_k": 0.4,
+        "r_at_k": 0.667,
+        "hits": [
+          "RUN-01",
+          "RUN-02"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q7",
+        "p_at_k": 0.6,
+        "r_at_k": 0.6,
+        "hits": [
+          "CMT-03",
+          "CMT-04",
+          "JIRA-4408"
+        ],
+        "n_relevant": 5
+      },
+      {
+        "id": "Q8",
+        "p_at_k": 0.4,
+        "r_at_k": 0.667,
+        "hits": [
+          "CMT-10",
+          "RUN-01"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q9",
+        "p_at_k": 0.4,
+        "r_at_k": 1.0,
+        "hits": [
+          "JIRA-4416",
+          "JIRA-4418"
+        ],
+        "n_relevant": 2
+      },
+      {
+        "id": "Q10",
+        "p_at_k": 0.0,
+        "r_at_k": 0.0,
+        "hits": [],
+        "n_relevant": 1
+      }
+    ],
+    "embedding": [
+      {
+        "id": "Q1",
+        "p_at_k": 0.4,
+        "r_at_k": 0.4,
+        "hits": [
+          "JIRA-4412",
+          "RES-12"
+        ],
+        "n_relevant": 5
+      },
+      {
+        "id": "Q2",
+        "p_at_k": 0.4,
+        "r_at_k": 0.5,
+        "hits": [
+          "JIRA-4412",
+          "RES-12"
+        ],
+        "n_relevant": 4
+      },
+      {
+        "id": "Q3",
+        "p_at_k": 0.4,
+        "r_at_k": 0.333,
+        "hits": [
+          "INC-1001",
+          "JIRA-4412"
+        ],
+        "n_relevant": 6
+      },
+      {
+        "id": "Q4",
+        "p_at_k": 0.2,
+        "r_at_k": 0.333,
+        "hits": [
+          "JIRA-4415"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q5",
+        "p_at_k": 0.4,
+        "r_at_k": 0.667,
+        "hits": [
+          "CMT-08",
+          "JIRA-4390"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q6",
+        "p_at_k": 0.4,
+        "r_at_k": 0.667,
+        "hits": [
+          "RUN-01",
+          "RUN-02"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q7",
+        "p_at_k": 0.6,
+        "r_at_k": 0.6,
+        "hits": [
+          "CMT-03",
+          "CMT-04",
+          "JIRA-4408"
+        ],
+        "n_relevant": 5
+      },
+      {
+        "id": "Q8",
+        "p_at_k": 0.6,
+        "r_at_k": 1.0,
+        "hits": [
+          "CMT-10",
+          "RES-08",
+          "RUN-01"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q9",
+        "p_at_k": 0.4,
+        "r_at_k": 1.0,
+        "hits": [
+          "JIRA-4416",
+          "JIRA-4418"
+        ],
+        "n_relevant": 2
+      },
+      {
+        "id": "Q10",
+        "p_at_k": 0.0,
+        "r_at_k": 0.0,
+        "hits": [],
+        "n_relevant": 1
+      }
+    ],
+    "hybrid": [
+      {
+        "id": "Q1",
+        "p_at_k": 0.4,
+        "r_at_k": 0.4,
+        "hits": [
+          "JIRA-4412",
+          "RES-12"
+        ],
+        "n_relevant": 5
+      },
+      {
+        "id": "Q2",
+        "p_at_k": 0.4,
+        "r_at_k": 0.5,
+        "hits": [
+          "JIRA-4412",
+          "RES-12"
+        ],
+        "n_relevant": 4
+      },
+      {
+        "id": "Q3",
+        "p_at_k": 0.4,
+        "r_at_k": 0.333,
+        "hits": [
+          "INC-1001",
+          "JIRA-4412"
+        ],
+        "n_relevant": 6
+      },
+      {
+        "id": "Q4",
+        "p_at_k": 0.2,
+        "r_at_k": 0.333,
+        "hits": [
+          "JIRA-4415"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q5",
+        "p_at_k": 0.4,
+        "r_at_k": 0.667,
+        "hits": [
+          "CMT-08",
+          "JIRA-4390"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q6",
+        "p_at_k": 0.4,
+        "r_at_k": 0.667,
+        "hits": [
+          "RUN-01",
+          "RUN-02"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q7",
+        "p_at_k": 0.6,
+        "r_at_k": 0.6,
+        "hits": [
+          "CMT-03",
+          "CMT-04",
+          "JIRA-4408"
+        ],
+        "n_relevant": 5
+      },
+      {
+        "id": "Q8",
+        "p_at_k": 0.4,
+        "r_at_k": 0.667,
+        "hits": [
+          "CMT-10",
+          "RUN-01"
+        ],
+        "n_relevant": 3
+      },
+      {
+        "id": "Q9",
+        "p_at_k": 0.4,
+        "r_at_k": 1.0,
+        "hits": [
+          "JIRA-4416",
+          "JIRA-4418"
+        ],
+        "n_relevant": 2
+      },
+      {
+        "id": "Q10",
+        "p_at_k": 0.0,
+        "r_at_k": 0.0,
+        "hits": [],
+        "n_relevant": 1
+      }
+    ]
+  }
+}

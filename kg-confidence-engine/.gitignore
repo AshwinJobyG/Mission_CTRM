@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Embedding cache (regenerated on demand)
+data/.cache/
+
+# Secrets
+.env
+
+# Generated plots are committed deliberately (Phase 7); cache is not.

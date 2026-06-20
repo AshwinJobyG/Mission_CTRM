@@ -1,0 +1,22 @@
+# kg-confidence-engine — dependencies grow phase by phase.
+
+# Phase 1: corpus (stdlib only)
+
+# Phase 2: retrieval
+numpy>=1.24
+rank-bm25>=0.2.2
+sentence-transformers>=2.2.0   # intended embedder (all-MiniLM-L6-v2)
+
+# Phase 3: graph
+# networkx>=3.0
+
+# Phase 4: decision synthesis
+# anthropic>=0.40
+
+# Phase 5/7: eval + plots
+# pandas>=2.0
+# matplotlib>=3.7
+
+# Phase 8: demo UI
+# streamlit>=1.36
+# pyvis>=0.3
