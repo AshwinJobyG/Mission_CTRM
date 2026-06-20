@@ -18,25 +18,26 @@ from datetime import date
 from pathlib import Path
 from typing import Iterable, Iterator
 
+from .schema import (
+    DEFAULT_NODE_TYPE,
+    ENTITY_NODE_TYPES,
+    ENTITY_REQUIRED_FIELDS,
+    REL_TYPES,
+)
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CORPUS_PATH = DATA_DIR / "corpus.json"
 
 # ---- controlled vocabularies -------------------------------------------------
+# NODE_TYPES is the legacy *document* classification (the ``type`` field) and is
+# unchanged. The new *entity* axis (``node_type``) and the edge relation
+# vocabulary (REL_TYPES) live in ``schema.py`` — the single migration point.
 
 NODE_TYPES = {"incident", "ticket", "comment", "resolution", "runbook", "doc"}
 STATUSES = {"open", "in_progress", "resolved", "wontfix", "verified", "deprecated"}
 # trust ordering, highest first: resolution > runbook/doc > ticket/incident > comment
 SOURCE_TIERS = {"resolution", "runbook", "doc", "incident", "ticket", "comment"}
 SECURITY_LABELS = {"public", "internal", "restricted", "hr_only"}
-REL_TYPES = {
-    "duplicate_of",
-    "relates_to",
-    "caused_by",
-    "resolved_by",
-    "blocks",
-    "supersedes",
-    "contradicts",
-}
 
 REQUIRED_FIELDS = {
     "id",
@@ -168,8 +169,17 @@ class Corpus:
 
         for i, node in enumerate(self._raw):
             loc = node.get("id", f"<index {i}>")
+            ntype = node.get("node_type", DEFAULT_NODE_TYPE)
 
-            missing = REQUIRED_FIELDS - set(node)
+            # The entity axis (node_type), if explicitly declared, must be known.
+            if "node_type" in node and ntype not in ENTITY_NODE_TYPES:
+                errors.append(f"{loc}: invalid node_type {ntype!r}")
+
+            # Legacy record nodes (the default, unchanged path) carry the full
+            # field contract; typed entity nodes carry the lighter one and are
+            # made retrievable via ``searchable_text`` instead of title+body.
+            required = REQUIRED_FIELDS if ntype == DEFAULT_NODE_TYPE else ENTITY_REQUIRED_FIELDS
+            missing = required - set(node)
             if missing:
                 errors.append(f"{loc}: missing required fields {sorted(missing)}")
                 continue
@@ -179,23 +189,44 @@ class Corpus:
                 errors.append(f"{nid}: duplicate id")
             seen_ids.add(nid)
 
-            if node["type"] not in NODE_TYPES:
-                errors.append(f"{nid}: invalid type {node['type']!r}")
-            if node["status"] not in STATUSES:
-                errors.append(f"{nid}: invalid status {node['status']!r}")
-            if node["source_tier"] not in SOURCE_TIERS:
-                errors.append(f"{nid}: invalid source_tier {node['source_tier']!r}")
-            if node["security_label"] not in SECURITY_LABELS:
-                errors.append(f"{nid}: invalid security_label {node['security_label']!r}")
-            if not str(node.get("title", "")).strip():
-                errors.append(f"{nid}: empty title")
-            if not str(node.get("body", "")).strip():
-                errors.append(f"{nid}: empty body")
+            if ntype == DEFAULT_NODE_TYPE:
+                # --- legacy record validation (byte-for-byte unchanged) ---
+                if node["type"] not in NODE_TYPES:
+                    errors.append(f"{nid}: invalid type {node['type']!r}")
+                if node["status"] not in STATUSES:
+                    errors.append(f"{nid}: invalid status {node['status']!r}")
+                if node["source_tier"] not in SOURCE_TIERS:
+                    errors.append(f"{nid}: invalid source_tier {node['source_tier']!r}")
+                if node["security_label"] not in SECURITY_LABELS:
+                    errors.append(f"{nid}: invalid security_label {node['security_label']!r}")
+                if not str(node.get("title", "")).strip():
+                    errors.append(f"{nid}: empty title")
+                if not str(node.get("body", "")).strip():
+                    errors.append(f"{nid}: empty body")
 
-            try:
-                date.fromisoformat(node["date"])
-            except (ValueError, TypeError):
-                errors.append(f"{nid}: invalid date {node.get('date')!r} (want YYYY-MM-DD)")
+                try:
+                    date.fromisoformat(node["date"])
+                except (ValueError, TypeError):
+                    errors.append(f"{nid}: invalid date {node.get('date')!r} (want YYYY-MM-DD)")
+            else:
+                # --- typed entity validation (relaxed; optional fields are
+                # validated only when present so the legacy enums still apply) ---
+                if not str(node.get("title", "")).strip():
+                    errors.append(f"{nid}: empty title")
+                if not str(node.get("searchable_text", "")).strip():
+                    errors.append(f"{nid}: empty searchable_text")
+                if "status" in node and node["status"] not in STATUSES:
+                    errors.append(f"{nid}: invalid status {node['status']!r}")
+                if "source_tier" in node and node["source_tier"] not in SOURCE_TIERS:
+                    errors.append(f"{nid}: invalid source_tier {node['source_tier']!r}")
+                if "security_label" in node and node["security_label"] not in SECURITY_LABELS:
+                    errors.append(f"{nid}: invalid security_label {node['security_label']!r}")
+                if "date" in node:
+                    try:
+                        date.fromisoformat(node["date"])
+                    except (ValueError, TypeError):
+                        errors.append(
+                            f"{nid}: invalid date {node.get('date')!r} (want YYYY-MM-DD)")
 
             links = node.get("links", [])
             if not isinstance(links, list):

@@ -41,7 +41,16 @@ def tokenize(text: str) -> list[str]:
 
 
 def node_text(node: dict) -> str:
-    """The text the retrievers search over: title + body."""
+    """The text the retrievers search over.
+
+    Prefers a synthesized ``searchable_text`` when present (resolves conflict
+    C3: typed Person/Team/Decision entities have little or no ``body``, so each
+    carries a synthesized field that makes it retrievable across types). Legacy
+    record nodes have no ``searchable_text`` and fall back to ``title + body`` —
+    byte-identical to before, so existing retrieval scores are unchanged.
+    """
+    if node.get("searchable_text"):
+        return node["searchable_text"]
     return f"{node['title']} {node['body']}"
 
 

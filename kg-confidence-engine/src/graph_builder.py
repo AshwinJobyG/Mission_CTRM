@@ -27,6 +27,7 @@ import networkx as nx
 
 from .corpus import Corpus
 from .retrieval import build_retrievers
+from .schema import DEFAULT_NODE_TYPE
 
 # Numeric weights for the structural signals.
 TIER_WEIGHT = {
@@ -75,16 +76,20 @@ def build_context_map(
 
     for nid in nodes:
         n = corpus.nodes[nid]
+        # ``.get`` defaults keep record nodes byte-identical (they always carry
+        # these fields) while letting typed entity nodes — which may omit
+        # body/status/etc. — flow through without a KeyError (Phase B/C).
         G.add_node(
             nid,
-            type=n["type"],
+            type=n.get("type", "record"),
+            node_type=n.get("node_type", DEFAULT_NODE_TYPE),
             title=n["title"],
-            body=n["body"],
-            status=n["status"],
-            source_tier=n["source_tier"],
-            date=n["date"],
-            author=n["author"],
-            security_label=n["security_label"],
+            body=n.get("body", ""),
+            status=n.get("status", "open"),
+            source_tier=n.get("source_tier", "ticket"),
+            date=n["date"] if "date" in n else None,
+            author=n.get("author", ""),
+            security_label=n.get("security_label", "internal"),
             seed=(nid in set(seeds)),
         )
 
