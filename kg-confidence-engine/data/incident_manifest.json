@@ -1,0 +1,391 @@
+{
+  "scenario": "NGPOWER P0 incident",
+  "impact_node": "NGPOWER-145",
+  "root_cause_node": "RISK-coupling",
+  "personas": {
+    "raised_risk": "PERSON-anupam",
+    "made_the_call": "PERSON-maneesh",
+    "owned_the_code": "PERSON-rinit",
+    "customer_impacted": "PERSON-franziska"
+  },
+  "gold_causal_spine": [
+    {
+      "src": "NGPOWER-145",
+      "rel": "CAUSED_BY",
+      "target": "NGPOWER-49",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-145",
+      "rel": "CAUSED_BY",
+      "target": "NGPOWER-50",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-49",
+      "rel": "DROPPED_IN",
+      "target": "DEC-drop49",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-49",
+      "rel": "OWNED_BY",
+      "target": "PERSON-rinit",
+      "has_evidence": true
+    },
+    {
+      "src": "DEC-drop49",
+      "rel": "DECIDED_IN",
+      "target": "MEET-grooming-14may",
+      "has_evidence": true
+    },
+    {
+      "src": "DEC-drop49",
+      "rel": "PRIORITIZED_BY",
+      "target": "PERSON-maneesh",
+      "has_evidence": true
+    },
+    {
+      "src": "MEET-grooming-14may",
+      "rel": "RAISED_RISK",
+      "target": "RISK-coupling",
+      "has_evidence": true
+    },
+    {
+      "src": "RISK-coupling",
+      "rel": "RAISED_RISK",
+      "target": "PERSON-anupam",
+      "has_evidence": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "PERSON-maneesh",
+      "node_type": "person",
+      "title": "Maneesh Sama"
+    },
+    {
+      "id": "PERSON-anupam",
+      "node_type": "person",
+      "title": "Anupam Sengupta"
+    },
+    {
+      "id": "PERSON-rinit",
+      "node_type": "person",
+      "title": "Rinit Jain"
+    },
+    {
+      "id": "PERSON-franziska",
+      "node_type": "person",
+      "title": "Franziska Vogel"
+    },
+    {
+      "id": "TEAM-ngpower",
+      "node_type": "team",
+      "title": "NGPOWER delivery team"
+    },
+    {
+      "id": "PRODUCT-epex",
+      "node_type": "product",
+      "title": "EPEX connectivity"
+    },
+    {
+      "id": "PRODUCT-persistence",
+      "node_type": "product",
+      "title": "Trade persistence service"
+    },
+    {
+      "id": "NGPOWER-45",
+      "node_type": "ticket",
+      "title": "NGPOWER-45: Volume generation for EPEX trades"
+    },
+    {
+      "id": "NGPOWER-49",
+      "node_type": "ticket",
+      "title": "NGPOWER-49: Decouple trade persistence from volume generation (transactional safeguard)"
+    },
+    {
+      "id": "NGPOWER-50",
+      "node_type": "ticket",
+      "title": "NGPOWER-50: Trade replay / recovery path after failover"
+    },
+    {
+      "id": "NGPOWER-19",
+      "node_type": "ticket",
+      "title": "NGPOWER-19: Idempotent persistence retries"
+    },
+    {
+      "id": "NGPOWER-11",
+      "node_type": "ticket",
+      "title": "NGPOWER-11: EPEX reference-data loader hardening"
+    },
+    {
+      "id": "NGPOWER-22",
+      "node_type": "ticket",
+      "title": "NGPOWER-22: Volume-generation throughput tuning"
+    },
+    {
+      "id": "NGPOWER-43",
+      "node_type": "ticket",
+      "title": "NGPOWER-43: Settlement export formatting"
+    },
+    {
+      "id": "NGPOWER-145",
+      "node_type": "incident",
+      "title": "NGPOWER-145: P0 \u2014 EU Power trades lost during EPEX failover"
+    },
+    {
+      "id": "MEET-grooming-14may",
+      "node_type": "meeting",
+      "title": "Backlog grooming \u2014 14 May 2026"
+    },
+    {
+      "id": "MEET-design-call",
+      "node_type": "meeting",
+      "title": "Persistence / volume-generation design call \u2014 8 May 2026"
+    },
+    {
+      "id": "MEET-incident-bridge",
+      "node_type": "meeting",
+      "title": "NGPOWER-145 incident bridge \u2014 28 May 2026"
+    },
+    {
+      "id": "DOC-postmortem",
+      "node_type": "document",
+      "title": "NGPOWER-145 postmortem"
+    },
+    {
+      "id": "DOC-iteration-review",
+      "node_type": "document",
+      "title": "Iteration review (reference)"
+    },
+    {
+      "id": "DOC-pbr-rdx",
+      "node_type": "document",
+      "title": "PBR-RDX reference-data walkthrough (reference)"
+    },
+    {
+      "id": "RISK-coupling",
+      "node_type": "risk",
+      "title": "Trade persistence transactionally coupled to volume generation"
+    },
+    {
+      "id": "DEC-drop49",
+      "node_type": "decision",
+      "title": "Drop NGPOWER-49 to protect EPEX connectivity go-live date"
+    },
+    {
+      "id": "AI-pull50",
+      "node_type": "action_item",
+      "title": "Pull NGPOWER-50 (replay/recovery) into current iteration"
+    },
+    {
+      "id": "AI-prioritise19",
+      "node_type": "action_item",
+      "title": "Prioritise NGPOWER-19 (idempotent persistence retries)"
+    },
+    {
+      "id": "AI-regression",
+      "node_type": "action_item",
+      "title": "Add a failover-during-batch regression test"
+    },
+    {
+      "id": "AI-grooming-rule",
+      "node_type": "action_item",
+      "title": "Grooming rule: safeguards cannot be dropped without risk sign-off"
+    },
+    {
+      "id": "CUST-eupower",
+      "node_type": "customer",
+      "title": "EU Power (EU Power Trading GmbH)"
+    }
+  ],
+  "edges": [
+    {
+      "src": "NGPOWER-145",
+      "rel": "CAUSED_BY",
+      "target": "NGPOWER-49",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-145",
+      "rel": "CAUSED_BY",
+      "target": "NGPOWER-50",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-49",
+      "rel": "DROPPED_IN",
+      "target": "DEC-drop49",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-49",
+      "rel": "OWNED_BY",
+      "target": "PERSON-rinit",
+      "has_evidence": true
+    },
+    {
+      "src": "DEC-drop49",
+      "rel": "DECIDED_IN",
+      "target": "MEET-grooming-14may",
+      "has_evidence": true
+    },
+    {
+      "src": "DEC-drop49",
+      "rel": "PRIORITIZED_BY",
+      "target": "PERSON-maneesh",
+      "has_evidence": true
+    },
+    {
+      "src": "MEET-grooming-14may",
+      "rel": "RAISED_RISK",
+      "target": "RISK-coupling",
+      "has_evidence": true
+    },
+    {
+      "src": "RISK-coupling",
+      "rel": "RAISED_RISK",
+      "target": "PERSON-anupam",
+      "has_evidence": true
+    },
+    {
+      "src": "RISK-coupling",
+      "rel": "MITIGATED_BY",
+      "target": "NGPOWER-49",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-145",
+      "rel": "IMPACTED",
+      "target": "CUST-eupower",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-145",
+      "rel": "RESULTED_IN",
+      "target": "AI-pull50",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-145",
+      "rel": "RESULTED_IN",
+      "target": "AI-prioritise19",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-145",
+      "rel": "RESULTED_IN",
+      "target": "AI-regression",
+      "has_evidence": true
+    },
+    {
+      "src": "NGPOWER-145",
+      "rel": "RESULTED_IN",
+      "target": "AI-grooming-rule",
+      "has_evidence": true
+    },
+    {
+      "src": "MEET-design-call",
+      "rel": "DESCRIBES",
+      "target": "RISK-coupling",
+      "has_evidence": true
+    },
+    {
+      "src": "DOC-postmortem",
+      "rel": "DESCRIBES",
+      "target": "NGPOWER-145",
+      "has_evidence": false
+    },
+    {
+      "src": "MEET-incident-bridge",
+      "rel": "DESCRIBES",
+      "target": "NGPOWER-145",
+      "has_evidence": true
+    },
+    {
+      "src": "AI-pull50",
+      "rel": "DESCRIBES",
+      "target": "NGPOWER-50",
+      "has_evidence": false
+    },
+    {
+      "src": "AI-prioritise19",
+      "rel": "DESCRIBES",
+      "target": "NGPOWER-19",
+      "has_evidence": false
+    },
+    {
+      "src": "NGPOWER-45",
+      "rel": "ASSIGNED_TO",
+      "target": "PERSON-rinit",
+      "has_evidence": false
+    },
+    {
+      "src": "NGPOWER-49",
+      "rel": "ASSIGNED_TO",
+      "target": "PERSON-rinit",
+      "has_evidence": false
+    },
+    {
+      "src": "PERSON-maneesh",
+      "rel": "MEMBER_OF",
+      "target": "TEAM-ngpower",
+      "has_evidence": false
+    },
+    {
+      "src": "PERSON-anupam",
+      "rel": "MEMBER_OF",
+      "target": "TEAM-ngpower",
+      "has_evidence": false
+    },
+    {
+      "src": "PERSON-rinit",
+      "rel": "MEMBER_OF",
+      "target": "TEAM-ngpower",
+      "has_evidence": false
+    },
+    {
+      "src": "TEAM-ngpower",
+      "rel": "SUPPORTS",
+      "target": "PRODUCT-epex",
+      "has_evidence": false
+    },
+    {
+      "src": "TEAM-ngpower",
+      "rel": "SUPPORTS",
+      "target": "PRODUCT-persistence",
+      "has_evidence": false
+    },
+    {
+      "src": "DOC-iteration-review",
+      "rel": "DESCRIBES",
+      "target": "PRODUCT-persistence",
+      "has_evidence": false
+    },
+    {
+      "src": "DOC-pbr-rdx",
+      "rel": "DESCRIBES",
+      "target": "PRODUCT-epex",
+      "has_evidence": false
+    },
+    {
+      "src": "DEC-drop49",
+      "rel": "EVIDENCED_BY",
+      "target": "MEET-grooming-14may",
+      "has_evidence": false
+    },
+    {
+      "src": "RISK-coupling",
+      "rel": "EVIDENCED_BY",
+      "target": "MEET-grooming-14may",
+      "has_evidence": false
+    },
+    {
+      "src": "NGPOWER-145",
+      "rel": "EVIDENCED_BY",
+      "target": "DOC-postmortem",
+      "has_evidence": false
+    }
+  ]
+}

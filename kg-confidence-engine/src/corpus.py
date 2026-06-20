@@ -27,6 +27,27 @@ from .schema import (
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CORPUS_PATH = DATA_DIR / "corpus.json"
+INCIDENT_CORPUS_PATH = DATA_DIR / "incident_corpus.json"
+
+# Named corpora selectable via the ``--corpus`` flag / ``KGCE_CORPUS`` env var.
+# The default remains the original corpus, so nothing changes unless asked.
+CORPUS_PATHS = {
+    "default": CORPUS_PATH,
+    "incident": INCIDENT_CORPUS_PATH,
+}
+
+
+def resolve_corpus_path(name: str | None) -> Path:
+    """Map a corpus name (``default`` / ``incident``) or a path to a Path.
+
+    ``None`` or ``"default"`` ⇒ the original corpus. An unknown string is
+    treated as a filesystem path so callers can point at an arbitrary corpus.
+    """
+    if not name or name == "default":
+        return CORPUS_PATH
+    if name in CORPUS_PATHS:
+        return CORPUS_PATHS[name]
+    return Path(name)
 
 # ---- controlled vocabularies -------------------------------------------------
 # NODE_TYPES is the legacy *document* classification (the ``type`` field) and is
@@ -55,11 +76,29 @@ REQUIRED_FIELDS = {
 
 @dataclass(frozen=True)
 class Edge:
-    """A typed, directed edge declared by a node's ``links``."""
+    """A typed, directed edge declared by a node's ``links``.
+
+    ``evidence`` (optional) attaches the justification for a causal edge — the
+    id of the source node plus the exact passage that grounds the claim. It is
+    ``None`` for legacy edges and is what Stage 3.5 / the LLM cite per step.
+    """
 
     src: str
     target: str
     rel: str
+    evidence: tuple | None = None
+
+
+def _evidence_tuple(link: dict) -> tuple | None:
+    """Normalize a link's optional ``evidence`` into a hashable (source, passage)."""
+    ev = link.get("evidence")
+    if not ev:
+        return None
+    if isinstance(ev, dict):
+        return (ev.get("source_id", ""), ev.get("passage", ""))
+    if isinstance(ev, (list, tuple)):
+        return tuple(ev)
+    return (str(ev), "")
 
 
 class CorpusValidationError(ValueError):
@@ -93,6 +132,18 @@ class Corpus:
             corpus.validate()
         return corpus
 
+    @classmethod
+    def load_named(cls, name: str | None = None, *, validate: bool = True) -> "Corpus":
+        """Load a named corpus (``default`` / ``incident``) or a path.
+
+        ``name`` falls back to the ``KGCE_CORPUS`` env var, then to the original
+        corpus — so existing callers and the default demo are unaffected.
+        """
+        import os
+
+        name = name or os.environ.get("KGCE_CORPUS")
+        return cls.load(resolve_corpus_path(name), validate=validate)
+
     # ---- access -----------------------------------------------------------
 
     def __len__(self) -> int:
@@ -119,7 +170,9 @@ class Corpus:
         out: list[Edge] = []
         for node in self:
             for link in node.get("links", []):
-                out.append(Edge(node["id"], link["target"], link["rel"]))
+                out.append(
+                    Edge(node["id"], link["target"], link["rel"], _evidence_tuple(link))
+                )
         return out
 
     def is_dangling(self, edge: Edge) -> bool:

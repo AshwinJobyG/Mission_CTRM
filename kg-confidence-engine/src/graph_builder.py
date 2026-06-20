@@ -98,7 +98,9 @@ def build_context_map(
         for link in corpus.nodes[nid].get("links", []):
             tgt, rel = link["target"], link["rel"]
             if tgt in nodes:
-                G.add_edge(nid, tgt, rel=rel)
+                # ``evidence`` is None for legacy edges (behaviour-neutral) and
+                # carries the (source_id, passage) justification for causal edges.
+                G.add_edge(nid, tgt, rel=rel, evidence=link.get("evidence"))
             elif tgt not in corpus:
                 dangling.append((nid, rel, tgt))
 
