@@ -68,10 +68,12 @@ The PoC should show:
 
 ## Repository contents
 
-| File | Description |
+| Path | Description |
 |------|-------------|
+| `kg-confidence-engine/` | **Implementation** — Graph-Informed Retrieval & Confidence Engine (see its own README) |
 | `PS-005_Enterprise_Knowledge_Retention.pdf` | The full problem statement (document body is PS-019) |
 | `5b404a7c-...png` | Privacy-aware enterprise chatbot architecture diagram |
+| `FUNCTIONAL_ARCHITECTURE.md` | Functional architecture notes |
 | `README.md` | This file |
 
 ## Definition of done
