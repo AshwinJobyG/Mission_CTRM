@@ -139,6 +139,10 @@ class CausalPath:
     def edges(self) -> list[tuple[str, str, str]]:
         return [(s.src, s.rel, s.target) for s in self.steps]
 
+    def edges_uv(self) -> list[tuple[str, str]]:
+        """(src, target) pairs — for highlighting path edges in the context map."""
+        return [(s.src, s.target) for s in self.steps]
+
     def evidence_sources(self) -> list[str]:
         """Distinct node ids cited as evidence across the path."""
         out: list[str] = []
@@ -302,10 +306,17 @@ def answer_query(
     if qtype == "causal":
         # Trace over the (role-filtered) full graph: the structural reasoning is
         # done by the graph, independent of what retrieval happened to surface.
-        causal_path = trace_causal_path(view, query)
-        for nid in causal_path.context_ids():
-            if nid in view and nid not in seeds:
-                seeds.append(nid)
+        traced = trace_causal_path(view, query)
+        if traced:  # a non-empty path was found
+            causal_path = traced
+            for nid in causal_path.context_ids():
+                if nid in view and nid not in seeds:
+                    seeds.append(nid)
+        else:
+            # No causal structure to traverse (e.g. a corpus with no causal
+            # graph): there is nothing to narrate, so the answer is factual.
+            # This keeps the existing factual demo byte-for-byte unchanged.
+            qtype = "factual"
 
     G = build_context_map(view, seeds, query=query)
     decision = synthesize_decision(G, query, causal_path=causal_path)

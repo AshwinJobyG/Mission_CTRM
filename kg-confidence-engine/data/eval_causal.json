@@ -1,0 +1,243 @@
+{
+  "scenario": "NGPOWER P0 incident \u2014 causal eval set",
+  "note": "Gold paths derived from data/incident_manifest.json. Separate from the original eval set so existing numbers do not move.",
+  "corpus": "incident",
+  "queries": [
+    {
+      "id": "CQ1",
+      "query": "Why did NGPOWER-145 become a P0 incident?",
+      "expected_type": "causal",
+      "entry_node": "NGPOWER-145",
+      "gold_root_cause": "RISK-coupling",
+      "gold_personas": {
+        "raised_risk": "PERSON-anupam",
+        "made_the_call": "PERSON-maneesh",
+        "owned_the_code": "PERSON-rinit",
+        "customer_impacted": "PERSON-franziska"
+      },
+      "gold_path_edges": [
+        [
+          "NGPOWER-145",
+          "CAUSED_BY",
+          "NGPOWER-49"
+        ],
+        [
+          "NGPOWER-145",
+          "CAUSED_BY",
+          "NGPOWER-50"
+        ],
+        [
+          "NGPOWER-49",
+          "DROPPED_IN",
+          "DEC-drop49"
+        ],
+        [
+          "NGPOWER-49",
+          "OWNED_BY",
+          "PERSON-rinit"
+        ],
+        [
+          "DEC-drop49",
+          "DECIDED_IN",
+          "MEET-grooming-14may"
+        ],
+        [
+          "DEC-drop49",
+          "PRIORITIZED_BY",
+          "PERSON-maneesh"
+        ],
+        [
+          "MEET-grooming-14may",
+          "RAISED_RISK",
+          "RISK-coupling"
+        ],
+        [
+          "RISK-coupling",
+          "RAISED_RISK",
+          "PERSON-anupam"
+        ]
+      ],
+      "gold_decision": "The P0 incident NGPOWER-145 occurred because trade persistence was transactionally coupled to volume generation. The safeguard NGPOWER-49 that would have decoupled persistence was dropped at the 14-May grooming, prioritised by Maneesh Sama to protect the EPEX connectivity date, despite the coupling risk raised by Anupam Sengupta. NGPOWER-49 was owned by Rinit Jain. A database failover mid-batch then lost EU Power trades, and with no recovery path (NGPOWER-50 still in backlog) they could not be reconstructed."
+    },
+    {
+      "id": "CQ2",
+      "query": "What was the root cause of the EU Power trade loss?",
+      "expected_type": "causal",
+      "entry_node": "NGPOWER-145",
+      "gold_root_cause": "RISK-coupling",
+      "gold_personas": {
+        "raised_risk": "PERSON-anupam",
+        "made_the_call": "PERSON-maneesh",
+        "owned_the_code": "PERSON-rinit",
+        "customer_impacted": "PERSON-franziska"
+      },
+      "gold_path_edges": [
+        [
+          "NGPOWER-145",
+          "CAUSED_BY",
+          "NGPOWER-49"
+        ],
+        [
+          "NGPOWER-145",
+          "CAUSED_BY",
+          "NGPOWER-50"
+        ],
+        [
+          "NGPOWER-49",
+          "DROPPED_IN",
+          "DEC-drop49"
+        ],
+        [
+          "NGPOWER-49",
+          "OWNED_BY",
+          "PERSON-rinit"
+        ],
+        [
+          "DEC-drop49",
+          "DECIDED_IN",
+          "MEET-grooming-14may"
+        ],
+        [
+          "DEC-drop49",
+          "PRIORITIZED_BY",
+          "PERSON-maneesh"
+        ],
+        [
+          "MEET-grooming-14may",
+          "RAISED_RISK",
+          "RISK-coupling"
+        ],
+        [
+          "RISK-coupling",
+          "RAISED_RISK",
+          "PERSON-anupam"
+        ]
+      ],
+      "gold_decision": "The P0 incident NGPOWER-145 occurred because trade persistence was transactionally coupled to volume generation. The safeguard NGPOWER-49 that would have decoupled persistence was dropped at the 14-May grooming, prioritised by Maneesh Sama to protect the EPEX connectivity date, despite the coupling risk raised by Anupam Sengupta. NGPOWER-49 was owned by Rinit Jain. A database failover mid-batch then lost EU Power trades, and with no recovery path (NGPOWER-50 still in backlog) they could not be reconstructed."
+    },
+    {
+      "id": "CQ3",
+      "query": "Why were EU Power trades lost during the EPEX database failover?",
+      "expected_type": "causal",
+      "entry_node": "NGPOWER-145",
+      "gold_root_cause": "RISK-coupling",
+      "gold_personas": {
+        "raised_risk": "PERSON-anupam",
+        "made_the_call": "PERSON-maneesh",
+        "owned_the_code": "PERSON-rinit",
+        "customer_impacted": "PERSON-franziska"
+      },
+      "gold_path_edges": [
+        [
+          "NGPOWER-145",
+          "CAUSED_BY",
+          "NGPOWER-49"
+        ],
+        [
+          "NGPOWER-145",
+          "CAUSED_BY",
+          "NGPOWER-50"
+        ],
+        [
+          "NGPOWER-49",
+          "DROPPED_IN",
+          "DEC-drop49"
+        ],
+        [
+          "NGPOWER-49",
+          "OWNED_BY",
+          "PERSON-rinit"
+        ],
+        [
+          "DEC-drop49",
+          "DECIDED_IN",
+          "MEET-grooming-14may"
+        ],
+        [
+          "DEC-drop49",
+          "PRIORITIZED_BY",
+          "PERSON-maneesh"
+        ],
+        [
+          "MEET-grooming-14may",
+          "RAISED_RISK",
+          "RISK-coupling"
+        ],
+        [
+          "RISK-coupling",
+          "RAISED_RISK",
+          "PERSON-anupam"
+        ]
+      ],
+      "gold_decision": "The P0 incident NGPOWER-145 occurred because trade persistence was transactionally coupled to volume generation. The safeguard NGPOWER-49 that would have decoupled persistence was dropped at the 14-May grooming, prioritised by Maneesh Sama to protect the EPEX connectivity date, despite the coupling risk raised by Anupam Sengupta. NGPOWER-49 was owned by Rinit Jain. A database failover mid-batch then lost EU Power trades, and with no recovery path (NGPOWER-50 still in backlog) they could not be reconstructed."
+    },
+    {
+      "id": "CQ4",
+      "query": "Why was the NGPOWER-49 safeguard dropped and who decided it?",
+      "expected_type": "causal",
+      "entry_node": "NGPOWER-145",
+      "gold_root_cause": "RISK-coupling",
+      "gold_personas": {
+        "raised_risk": "PERSON-anupam",
+        "made_the_call": "PERSON-maneesh",
+        "owned_the_code": "PERSON-rinit",
+        "customer_impacted": "PERSON-franziska"
+      },
+      "gold_path_edges": [
+        [
+          "NGPOWER-145",
+          "CAUSED_BY",
+          "NGPOWER-49"
+        ],
+        [
+          "NGPOWER-145",
+          "CAUSED_BY",
+          "NGPOWER-50"
+        ],
+        [
+          "NGPOWER-49",
+          "DROPPED_IN",
+          "DEC-drop49"
+        ],
+        [
+          "NGPOWER-49",
+          "OWNED_BY",
+          "PERSON-rinit"
+        ],
+        [
+          "DEC-drop49",
+          "DECIDED_IN",
+          "MEET-grooming-14may"
+        ],
+        [
+          "DEC-drop49",
+          "PRIORITIZED_BY",
+          "PERSON-maneesh"
+        ],
+        [
+          "MEET-grooming-14may",
+          "RAISED_RISK",
+          "RISK-coupling"
+        ],
+        [
+          "RISK-coupling",
+          "RAISED_RISK",
+          "PERSON-anupam"
+        ]
+      ],
+      "gold_decision": "The P0 incident NGPOWER-145 occurred because trade persistence was transactionally coupled to volume generation. The safeguard NGPOWER-49 that would have decoupled persistence was dropped at the 14-May grooming, prioritised by Maneesh Sama to protect the EPEX connectivity date, despite the coupling risk raised by Anupam Sengupta. NGPOWER-49 was owned by Rinit Jain. A database failover mid-batch then lost EU Power trades, and with no recovery path (NGPOWER-50 still in backlog) they could not be reconstructed."
+    },
+    {
+      "id": "FC1",
+      "query": "Who are the members of the NGPOWER team?",
+      "expected_type": "factual",
+      "gold_decision": "The NGPOWER team members are Maneesh Sama, Anupam Sengupta and Rinit Jain."
+    },
+    {
+      "id": "FC2",
+      "query": "What is the status of NGPOWER-50?",
+      "expected_type": "factual",
+      "gold_decision": "NGPOWER-50 trade replay recovery path is in backlog open."
+    }
+  ]
+}

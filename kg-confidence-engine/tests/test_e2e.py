@@ -166,6 +166,64 @@ def test_eval_harness(c):
     check("judge returns (bool, recall)", isinstance(ok, bool) and 0.0 <= recall <= 1.0)
 
 
+def test_causal():
+    """Phase B–E: incident corpus, Stage 3.5 traversal, path-completeness."""
+    print("[causal]")
+    from src.build_incident import SPINE_EDGES, verify
+    from src.causal_traversal import (answer_query, classify_query,
+                                      trace_causal_path)
+    from src.confidence import score_confidence
+    from src.corpus import Corpus
+
+    check("incident graph verifies (spine + evidence)", verify())
+
+    ic = Corpus.load_named("incident")
+    check("incident corpus has typed entities",
+          any(n.get("node_type") == "person" for n in ic))
+
+    check("routing: 'why' is causal", classify_query("Why did this become a P0?") == "causal")
+    check("routing: lookup is factual", classify_query("Who owns NGPOWER-49?") == "factual")
+
+    path = trace_causal_path(ic, "Why did NGPOWER-145 become a P0 incident?")
+    gold = {(s, r, t) for (s, r, t, _e) in SPINE_EDGES}
+    check("traversal recovers full gold spine", set(path.edges()) == gold)
+    check("every traced step carries evidence", path.evidenced_steps == len(path.steps))
+    check("personas surfaced (3 roles)", len(path.personas) == 3)
+    check("root cause is the coupling risk", "RISK-coupling" in path.root_causes)
+
+    ans = answer_query(ic, "Why did NGPOWER-145 become a P0 incident?")
+    check("causal query routed causal", ans.query_type == "causal")
+    check("decision introduces no hallucinated citation",
+          not ans.decision.hallucinated_citations)
+    check("confidence has 7 features (causal)", len(ans.confidence.breakdown) == 7)
+    pc = ans.confidence.breakdown["path_completeness"]
+    check("path_completeness carries weight on causal", pc["weight"] > 0)
+    check("full evidenced path scores high completeness", pc["value"] >= 0.99)
+
+    # broken variant: strip one evidence -> lower completeness + named gap
+    from src.causal_traversal import CausalPath, CausalStep
+    from src.graph_builder import build_context_map
+    from src.decision import synthesize_decision
+    bsteps = [CausalStep(s.src, s.rel, s.target, s.src_title, s.target_title,
+                         s.target_type, s.depth, None) if i == 0 else s
+              for i, s in enumerate(path.steps)]
+    broken = CausalPath(path.entry, bsteps, path.root_causes, path.personas)
+    seeds = [n for n in path.context_ids() if n in ic]
+    G = build_context_map(ic, seeds, query="why")
+    d = synthesize_decision(G, "why", causal_path=broken)
+    cb = score_confidence(G, d, causal_path=broken, query_type="causal")
+    check("broken path scores lower completeness",
+          cb.breakdown["path_completeness"]["value"] < pc["value"])
+    check("gap report names the unevidenced link",
+          any(g["type"] == "unevidenced_causal_link" for g in cb.gap_report))
+
+    # factual query on incident corpus is NOT scored with causal weights
+    fa = answer_query(ic, "Who are the members of the NGPOWER team?")
+    check("factual query stays factual", fa.query_type == "factual")
+    check("factual path_completeness weight is 0",
+          fa.confidence.breakdown["path_completeness"]["weight"] == 0.0)
+
+
 def main():
     c = test_corpus()
     R = test_retrieval(c)
@@ -175,6 +233,7 @@ def main():
     test_confidence(c, G, res)
     test_access(c)
     test_eval_harness(c)
+    test_causal()
     print(f"\nALL {len(PASSED)} CHECKS PASSED ✅")
 
 

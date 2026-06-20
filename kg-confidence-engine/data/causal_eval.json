@@ -1,0 +1,363 @@
+{
+  "routing": [
+    {
+      "id": "CQ1",
+      "expected": "causal",
+      "routed": "causal",
+      "ok": true
+    },
+    {
+      "id": "CQ2",
+      "expected": "causal",
+      "routed": "causal",
+      "ok": true
+    },
+    {
+      "id": "CQ3",
+      "expected": "causal",
+      "routed": "causal",
+      "ok": true
+    },
+    {
+      "id": "CQ4",
+      "expected": "causal",
+      "routed": "causal",
+      "ok": true
+    },
+    {
+      "id": "FC1",
+      "expected": "factual",
+      "routed": "factual",
+      "ok": true
+    },
+    {
+      "id": "FC2",
+      "expected": "factual",
+      "routed": "factual",
+      "ok": true
+    }
+  ],
+  "path_retrieval": {
+    "mean_precision": 1.0,
+    "mean_recall": 1.0,
+    "mean_f1": 1.0,
+    "per_query": [
+      {
+        "id": "CQ1",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "n_pred": 8,
+        "n_gold": 8,
+        "root_cause_recovered": true,
+        "personas_consistent": true,
+        "missing_edges": []
+      },
+      {
+        "id": "CQ2",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "n_pred": 8,
+        "n_gold": 8,
+        "root_cause_recovered": true,
+        "personas_consistent": true,
+        "missing_edges": []
+      },
+      {
+        "id": "CQ3",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "n_pred": 8,
+        "n_gold": 8,
+        "root_cause_recovered": true,
+        "personas_consistent": true,
+        "missing_edges": []
+      },
+      {
+        "id": "CQ4",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "n_pred": 8,
+        "n_gold": 8,
+        "root_cause_recovered": true,
+        "personas_consistent": true,
+        "missing_edges": []
+      }
+    ]
+  },
+  "calibration": {
+    "ece": 0.1606,
+    "bins": [
+      {
+        "lo": 0.8,
+        "hi": 1.0,
+        "count": 28,
+        "mean_conf": 0.875,
+        "accuracy": 0.714
+      }
+    ]
+  },
+  "thesis_causal": {
+    "n_conditions": 28,
+    "overall_accuracy": 0.714,
+    "pearson_path_completeness_vs_correct": 0.789,
+    "pearson_confidence_vs_correct": 0.418
+  },
+  "conditions": [
+    {
+      "id": "CQ1",
+      "k_steps": 2,
+      "path_completeness": 0.8,
+      "confidence": 0.8715,
+      "band": "high",
+      "correct": false,
+      "gold_recall": 0.487
+    },
+    {
+      "id": "CQ1",
+      "k_steps": 3,
+      "path_completeness": 0.8,
+      "confidence": 0.8684,
+      "band": "high",
+      "correct": false,
+      "gold_recall": 0.615
+    },
+    {
+      "id": "CQ1",
+      "k_steps": 4,
+      "path_completeness": 0.8667,
+      "confidence": 0.8718,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.718
+    },
+    {
+      "id": "CQ1",
+      "k_steps": 5,
+      "path_completeness": 0.8667,
+      "confidence": 0.8673,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.718
+    },
+    {
+      "id": "CQ1",
+      "k_steps": 6,
+      "path_completeness": 0.9333,
+      "confidence": 0.8798,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.744
+    },
+    {
+      "id": "CQ1",
+      "k_steps": 7,
+      "path_completeness": 0.9333,
+      "confidence": 0.8749,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.872
+    },
+    {
+      "id": "CQ1",
+      "k_steps": 8,
+      "path_completeness": 1.0,
+      "confidence": 0.8907,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.897
+    },
+    {
+      "id": "CQ2",
+      "k_steps": 2,
+      "path_completeness": 0.8,
+      "confidence": 0.8715,
+      "band": "high",
+      "correct": false,
+      "gold_recall": 0.487
+    },
+    {
+      "id": "CQ2",
+      "k_steps": 3,
+      "path_completeness": 0.8,
+      "confidence": 0.8684,
+      "band": "high",
+      "correct": false,
+      "gold_recall": 0.615
+    },
+    {
+      "id": "CQ2",
+      "k_steps": 4,
+      "path_completeness": 0.8667,
+      "confidence": 0.8718,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.718
+    },
+    {
+      "id": "CQ2",
+      "k_steps": 5,
+      "path_completeness": 0.8667,
+      "confidence": 0.8673,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.718
+    },
+    {
+      "id": "CQ2",
+      "k_steps": 6,
+      "path_completeness": 0.9333,
+      "confidence": 0.8798,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.744
+    },
+    {
+      "id": "CQ2",
+      "k_steps": 7,
+      "path_completeness": 0.9333,
+      "confidence": 0.8749,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.872
+    },
+    {
+      "id": "CQ2",
+      "k_steps": 8,
+      "path_completeness": 1.0,
+      "confidence": 0.8907,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.897
+    },
+    {
+      "id": "CQ3",
+      "k_steps": 2,
+      "path_completeness": 0.8,
+      "confidence": 0.8715,
+      "band": "high",
+      "correct": false,
+      "gold_recall": 0.487
+    },
+    {
+      "id": "CQ3",
+      "k_steps": 3,
+      "path_completeness": 0.8,
+      "confidence": 0.8684,
+      "band": "high",
+      "correct": false,
+      "gold_recall": 0.615
+    },
+    {
+      "id": "CQ3",
+      "k_steps": 4,
+      "path_completeness": 0.8667,
+      "confidence": 0.8718,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.718
+    },
+    {
+      "id": "CQ3",
+      "k_steps": 5,
+      "path_completeness": 0.8667,
+      "confidence": 0.8673,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.718
+    },
+    {
+      "id": "CQ3",
+      "k_steps": 6,
+      "path_completeness": 0.9333,
+      "confidence": 0.8798,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.744
+    },
+    {
+      "id": "CQ3",
+      "k_steps": 7,
+      "path_completeness": 0.9333,
+      "confidence": 0.8749,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.872
+    },
+    {
+      "id": "CQ3",
+      "k_steps": 8,
+      "path_completeness": 1.0,
+      "confidence": 0.8907,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.897
+    },
+    {
+      "id": "CQ4",
+      "k_steps": 2,
+      "path_completeness": 0.8,
+      "confidence": 0.8715,
+      "band": "high",
+      "correct": false,
+      "gold_recall": 0.487
+    },
+    {
+      "id": "CQ4",
+      "k_steps": 3,
+      "path_completeness": 0.8,
+      "confidence": 0.8684,
+      "band": "high",
+      "correct": false,
+      "gold_recall": 0.615
+    },
+    {
+      "id": "CQ4",
+      "k_steps": 4,
+      "path_completeness": 0.8667,
+      "confidence": 0.8718,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.718
+    },
+    {
+      "id": "CQ4",
+      "k_steps": 5,
+      "path_completeness": 0.8667,
+      "confidence": 0.8673,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.718
+    },
+    {
+      "id": "CQ4",
+      "k_steps": 6,
+      "path_completeness": 0.9333,
+      "confidence": 0.8798,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.744
+    },
+    {
+      "id": "CQ4",
+      "k_steps": 7,
+      "path_completeness": 0.9333,
+      "confidence": 0.8749,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.872
+    },
+    {
+      "id": "CQ4",
+      "k_steps": 8,
+      "path_completeness": 1.0,
+      "confidence": 0.8907,
+      "band": "high",
+      "correct": true,
+      "gold_recall": 0.897
+    }
+  ]
+}
