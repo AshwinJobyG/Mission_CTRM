@@ -11,7 +11,7 @@ sentence-transformers>=2.2.0   # intended embedder (all-MiniLM-L6-v2)
 networkx>=3.0
 
 # Phase 4: decision synthesis
-# anthropic>=0.40
+anthropic>=0.40
 
 # Phase 5/7: eval + plots
 # pandas>=2.0

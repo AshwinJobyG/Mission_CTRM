@@ -1,0 +1,225 @@
+"""Decision synthesis — the `think` stage, kept distinct from `search`.
+
+Reasons over the context map to produce a grounded decision with inline node-ID
+citations. Deliberate design choices (stated in the README):
+
+* The model is grounded *only* in the provided subgraph nodes and must cite node
+  IDs for every claim and flag what it cannot determine.
+* The model does NOT output a confidence number — confidence is computed by us
+  from graph structure (Phase 5), never self-reported by the LLM.
+
+Backend: a single Anthropic API call (``claude-sonnet-4-6``), with the key read
+from ``ANTHROPIC_API_KEY`` (never hardcoded). When no key is present we fall back
+to a deterministic extractive synthesizer so the full pipeline (confidence,
+access, UI) stays runnable; the fallback is clearly labeled via
+``DecisionResult.method``.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+from dataclasses import dataclass, field
+
+import networkx as nx
+
+from .corpus import Corpus
+from .graph_builder import build_context_map
+from .retrieval import build_retrievers
+
+MODEL = "claude-sonnet-4-6"
+NODE_ID_RE = re.compile(r"\b[A-Z]{2,5}-\d+\b")
+BODY_SNIPPET = 240
+
+
+@dataclass
+class DecisionResult:
+    decision_text: str
+    cited_node_ids: list[str]
+    model_noted_gaps: list[str]
+    method: str = "anthropic"
+    hallucinated_citations: list[str] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Context serialization
+# ---------------------------------------------------------------------------
+
+def serialize_context_map(G: nx.DiGraph) -> str:
+    """Compact, structured context block: nodes + explicit typed edges."""
+    lines = ["NODES:"]
+    for n in sorted(G, key=lambda x: -G.nodes[x].get("hubness", 0.0)):
+        d = G.nodes[n]
+        snippet = " ".join(d["body"].split())[:BODY_SNIPPET]
+        lines.append(
+            f"[{n} | {d['type']} | {d['status']} | tier={d['source_tier']} | {d['date']}] "
+            f"{d['title']} — {snippet}"
+        )
+    lines.append("\nRELATIONSHIPS (typed edges):")
+    for u, v, data in G.edges(data=True):
+        lines.append(f"{u} --{data.get('rel')}--> {v}")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Synthesis
+# ---------------------------------------------------------------------------
+
+SYSTEM_PROMPT = (
+    "You are a careful incident-analysis assistant. You are given a set of "
+    "knowledge-graph NODES (each with an ID) and the typed RELATIONSHIPS between "
+    "them. Answer the user's question using ONLY the information in these nodes.\n\n"
+    "Rules:\n"
+    "1. Ground every statement in the provided nodes. Do not use outside knowledge.\n"
+    "2. Cite the node ID(s) inline in square brackets for every claim, e.g. [RES-12].\n"
+    "3. Only cite IDs that appear in the provided NODES.\n"
+    "4. Explicitly state anything you cannot determine from the provided context "
+    "(missing links, contradictions, stale/superseded info).\n"
+    "5. Do NOT output any confidence score, percentage, or certainty level — "
+    "confidence is computed separately from the graph structure.\n\n"
+    "Respond as strict JSON with keys: \"decision_text\" (string, with inline "
+    "[ID] citations), \"cited_node_ids\" (list of the node IDs you cited), and "
+    "\"noted_gaps\" (list of short strings describing what could not be "
+    "determined). Output only the JSON object."
+)
+
+
+def synthesize_decision(G: nx.DiGraph, query: str) -> DecisionResult:
+    """Produce a grounded, cited decision over the context map."""
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            return _synthesize_anthropic(G, query)
+        except Exception as exc:  # network/SDK error -> fall back, but be loud
+            print(f"[decision] Anthropic call failed ({type(exc).__name__}: {exc}); "
+                  "using extractive fallback.")
+    return _synthesize_extractive(G, query)
+
+
+def _synthesize_anthropic(G: nx.DiGraph, query: str) -> DecisionResult:
+    from anthropic import Anthropic
+
+    client = Anthropic()
+    context = serialize_context_map(G)
+    msg = client.messages.create(
+        model=MODEL,
+        max_tokens=1024,
+        system=SYSTEM_PROMPT,
+        messages=[{
+            "role": "user",
+            "content": f"QUESTION: {query}\n\nCONTEXT MAP:\n{context}",
+        }],
+    )
+    text = "".join(block.text for block in msg.content if block.type == "text")
+    data = _parse_json(text)
+    decision_text = data.get("decision_text", text)
+    cited = data.get("cited_node_ids") or NODE_ID_RE.findall(decision_text)
+    gaps = data.get("noted_gaps", [])
+    return _finalize(G, decision_text, cited, gaps, method="anthropic")
+
+
+def _synthesize_extractive(G: nx.DiGraph, query: str) -> DecisionResult:
+    """Deterministic, grounded fallback: rank support by structural signal."""
+    if not G:
+        return DecisionResult("No context could be retrieved for this query.", [], [],
+                              method="extractive")
+
+    def support_score(n: str) -> float:
+        d = G.nodes[n]
+        return (0.40 * d.get("hubness", 0)
+                + 0.25 * d.get("tier_w", 0)
+                + 0.20 * d.get("freshness", 0)
+                + 0.15 * d.get("status_w", 0))
+
+    ranked = sorted(G, key=support_score, reverse=True)
+    support = ranked[:4]
+    parts = [f"Based on the retrieved context map for: \"{query}\""]
+    for n in support:
+        d = G.nodes[n]
+        snippet = " ".join(d["body"].split())[:160]
+        parts.append(f"- [{n}] ({d['type']}, {d['status']}, {d['date']}): {snippet}")
+    top = support[0]
+    parts.append(
+        f"\nThe most corroborated, highest-trust reference is [{top}] "
+        f"(in-degree {G.nodes[top].get('in_degree', 0)} within the retrieved "
+        f"subgraph): {G.nodes[top]['title']}."
+    )
+
+    gaps = _structural_gaps(G)
+    return _finalize(G, "\n".join(parts), support, gaps, method="extractive")
+
+
+def _structural_gaps(G: nx.DiGraph) -> list[str]:
+    gaps: list[str] = []
+    for a, b in G.graph.get("contradictions", []):
+        gaps.append(f"References {a} and {b} contradict each other.")
+    for src, rel, tgt in G.graph.get("dangling", []):
+        gaps.append(f"{src} references {tgt} ({rel}) which is not available in the corpus.")
+    stale = [n for n in G if G.nodes[n].get("status") == "deprecated"]
+    if stale:
+        gaps.append(f"Some references are deprecated/superseded: {', '.join(sorted(stale))}.")
+    return gaps
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _parse_json(text: str) -> dict:
+    text = text.strip()
+    m = re.search(r"\{.*\}", text, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group(0))
+        except json.JSONDecodeError:
+            pass
+    return {}
+
+
+def _finalize(G, decision_text, cited, gaps, *, method) -> DecisionResult:
+    """Validate citations against the subgraph; flag any hallucinated IDs."""
+    in_graph = set(G.nodes)
+    seen: list[str] = []
+    halluc: list[str] = []
+    for c in cited:
+        if c in in_graph and c not in seen:
+            seen.append(c)
+        elif c not in in_graph and c not in halluc:
+            halluc.append(c)
+    # Also catch IDs mentioned inline but not declared as cited.
+    for c in NODE_ID_RE.findall(decision_text):
+        if c in in_graph and c not in seen:
+            seen.append(c)
+        elif c not in in_graph and c not in halluc:
+            halluc.append(c)
+    return DecisionResult(
+        decision_text=decision_text,
+        cited_node_ids=seen,
+        model_noted_gaps=list(gaps),
+        method=method,
+        hallucinated_citations=halluc,
+    )
+
+
+def decide_for_query(corpus: Corpus, query: str, *, pool: int = 12) -> tuple[nx.DiGraph, DecisionResult]:
+    """Convenience: retrieve -> build context map -> synthesize."""
+    retrievers = build_retrievers(corpus)
+    top = [nid for nid, _ in retrievers["hybrid"].retrieve(query, k=pool)]
+    G = build_context_map(corpus, top, query=query)
+    return G, synthesize_decision(G, query)
+
+
+if __name__ == "__main__":
+    corpus = Corpus.load()
+    q = "what is the root cause of the SG settlement batch failures?"
+    G, result = decide_for_query(corpus, q)
+    print(f"query: {q}")
+    print(f"method: {result.method}\n")
+    print("DECISION:")
+    print(result.decision_text)
+    print(f"\ncited node ids: {result.cited_node_ids}")
+    print(f"model-noted gaps: {result.model_noted_gaps}")
+    if result.hallucinated_citations:
+        print(f"!! hallucinated citations (not in subgraph): {result.hallucinated_citations}")
+    else:
+        print("citation check: all citations reference real subgraph nodes.")
