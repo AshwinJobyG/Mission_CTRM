@@ -124,29 +124,37 @@ def _synthesize_extractive(G: nx.DiGraph, query: str) -> DecisionResult:
         return DecisionResult("No context could be retrieved for this query.", [], [],
                               method="extractive")
 
-    def support_score(n: str) -> float:
-        d = G.nodes[n]
-        return (0.40 * d.get("hubness", 0)
-                + 0.25 * d.get("tier_w", 0)
-                + 0.20 * d.get("freshness", 0)
-                + 0.15 * d.get("status_w", 0))
-
-    ranked = sorted(G, key=support_score, reverse=True)
-    support = ranked[:4]
-    parts = [f"Based on the retrieved context map for: \"{query}\""]
+    # Cite the query-relevant seeds (the nodes actually retrieved for this
+    # query), in retrieval order — NOT globally-high-signal nodes pulled in by
+    # graph expansion. This keeps the decision (and thus the confidence computed
+    # over it) faithful to each query's real evidential basis.
+    seeds = [s for s in G.graph.get("seeds", []) if s in G]
+    if not seeds:  # degenerate: fall back to structural ranking
+        def support_score(n: str) -> float:
+            d = G.nodes[n]
+            return (0.40 * d.get("hubness", 0) + 0.25 * d.get("tier_w", 0)
+                    + 0.20 * d.get("freshness", 0) + 0.15 * d.get("status_w", 0))
+        seeds = sorted(G, key=support_score, reverse=True)
+    support = seeds[:4]
+    top = support[0]
+    # One grounded claim per line, each carrying its citation, so claim-level
+    # citation integrity is measured cleanly.
+    lines = [
+        f"The most corroborated, highest-trust reference for this query is [{top}] "
+        f"(in-degree {G.nodes[top].get('in_degree', 0)} in the retrieved subgraph): "
+        f"{G.nodes[top]['title']}."
+    ]
+    others = support[1:]
+    if others:
+        lines.append("It is corroborated within the subgraph by "
+                     + ", ".join(f"[{n}]" for n in others) + ".")
     for n in support:
         d = G.nodes[n]
-        snippet = " ".join(d["body"].split())[:160]
-        parts.append(f"- [{n}] ({d['type']}, {d['status']}, {d['date']}): {snippet}")
-    top = support[0]
-    parts.append(
-        f"\nThe most corroborated, highest-trust reference is [{top}] "
-        f"(in-degree {G.nodes[top].get('in_degree', 0)} within the retrieved "
-        f"subgraph): {G.nodes[top]['title']}."
-    )
+        clause = " ".join(d["body"].split()).split(". ")[0][:160].rstrip(".")
+        lines.append(f"[{n}] ({d['type']}, {d['status']}): {clause}.")
 
     gaps = _structural_gaps(G)
-    return _finalize(G, "\n".join(parts), support, gaps, method="extractive")
+    return _finalize(G, "\n".join(lines), support, gaps, method="extractive")
 
 
 def _structural_gaps(G: nx.DiGraph) -> list[str]:
@@ -201,10 +209,19 @@ def _finalize(G, decision_text, cited, gaps, *, method) -> DecisionResult:
     )
 
 
-def decide_for_query(corpus: Corpus, query: str, *, pool: int = 12) -> tuple[nx.DiGraph, DecisionResult]:
-    """Convenience: retrieve -> build context map -> synthesize."""
-    retrievers = build_retrievers(corpus)
-    top = [nid for nid, _ in retrievers["hybrid"].retrieve(query, k=pool)]
+def decide_for_query(
+    corpus: Corpus, query: str, *, retriever=None, n_seeds: int = 8
+) -> tuple[nx.DiGraph, DecisionResult]:
+    """Convenience: retrieve (graph-boosted) -> build context map -> synthesize.
+
+    Uses the graph-boosted retriever (our best per Phase 3) by default so the
+    seeds are both query-relevant and structurally strong; pass ``retriever`` to
+    override (e.g. an access-filtered retriever in Phase 6).
+    """
+    if retriever is None:
+        from .graph_builder import GraphBoostedRetriever
+        retriever = GraphBoostedRetriever(build_retrievers(corpus)["hybrid"], corpus)
+    top = [nid for nid, _ in retriever.retrieve(query, k=n_seeds)]
     G = build_context_map(corpus, top, query=query)
     return G, synthesize_decision(G, query)
 

@@ -103,6 +103,35 @@ measured improvement from using the structure of the retrieved subgraph. The top
 hub for the root-cause query is the postmortem `RES-12` (in-degree 7), i.e. the
 node the most other references corroborate.
 
+### Confidence model (Phase 5) — transparent, decomposable
+
+Confidence is a weighted combination of six observable subgraph features, each
+normalized to [0,1]; **the score is exactly the (clamped) sum of contributions**,
+so it reconstructs by hand from the breakdown. Example (root-cause query):
+
+| feature | value | weight | contribution |
+|---|---|---|---|
+| corroboration | 1.00 | +0.35 | +0.350 |
+| source_tier | 0.65 | +0.20 | +0.130 |
+| freshness | 0.85 | +0.25 | +0.213 |
+| citation_integrity | 1.00 | +0.20 | +0.200 |
+| contradiction | 0.00 | −0.30 | −0.000 |
+| coverage | 0.56 | −0.15 | −0.084 |
+| **score** | | | **0.809 → HIGH** |
+
+Plus a structured **gap report** (contradictions, dangling references, stale
+nodes, uncited claims) — the "what we don't know" surface.
+
+**Band alignment on the eval set (default role, extractive decision):** 6/10
+predicted bands match the labels; the HIGH band is identified cleanly (high
+mean 0.72 vs medium/low ≈ 0.53). The misses are understood: Q4/Q6/Q8 are
+borderline medium↔low calls, and **Q9 is role-dependent** — its supporting node
+is `restricted`, so at the default (lead) role it is visible and the query is
+answerable (not low); under an `intern` role it drops to low (shown in Phase 6).
+Note: `citation_integrity` is degenerate (≈1.0) under the extractive fallback,
+so discrimination here comes from the structural features; with real LLM
+synthesis it also penalizes uncited/hallucinated claims.
+
 *(Calibration/ECE and thesis-validation results land in Phase 7.)*
 
 ## Out of scope (named deliberately)

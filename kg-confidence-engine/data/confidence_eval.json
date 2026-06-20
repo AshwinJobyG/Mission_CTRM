@@ -1,0 +1,84 @@
+{
+  "rows": [
+    {
+      "id": "Q1",
+      "expected": "high",
+      "score": 0.8093,
+      "predicted": "high",
+      "match": true,
+      "method": "extractive"
+    },
+    {
+      "id": "Q2",
+      "expected": "high",
+      "score": 0.7218,
+      "predicted": "high",
+      "match": true,
+      "method": "extractive"
+    },
+    {
+      "id": "Q3",
+      "expected": "high",
+      "score": 0.6363,
+      "predicted": "high",
+      "match": true,
+      "method": "extractive"
+    },
+    {
+      "id": "Q4",
+      "expected": "medium",
+      "score": 0.3633,
+      "predicted": "low",
+      "match": false,
+      "method": "extractive"
+    },
+    {
+      "id": "Q5",
+      "expected": "medium",
+      "score": 0.5922,
+      "predicted": "medium",
+      "match": true,
+      "method": "extractive"
+    },
+    {
+      "id": "Q6",
+      "expected": "medium",
+      "score": 0.6318,
+      "predicted": "high",
+      "match": false,
+      "method": "extractive"
+    },
+    {
+      "id": "Q7",
+      "expected": "low",
+      "score": 0.4773,
+      "predicted": "low",
+      "match": true,
+      "method": "extractive"
+    },
+    {
+      "id": "Q8",
+      "expected": "low",
+      "score": 0.5694,
+      "predicted": "medium",
+      "match": false,
+      "method": "extractive"
+    },
+    {
+      "id": "Q9",
+      "expected": "low",
+      "score": 0.6391,
+      "predicted": "high",
+      "match": false,
+      "method": "extractive"
+    },
+    {
+      "id": "Q10",
+      "expected": "low",
+      "score": 0.435,
+      "predicted": "low",
+      "match": true,
+      "method": "extractive"
+    }
+  ]
+}
