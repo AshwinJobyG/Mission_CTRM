@@ -1,0 +1,85 @@
+{
+  "notes": "Labeled retrieval + decision eval set for the SG settlement-batch corpus. relevant_node_ids is the ground-truth relevant set for P@k / R@k. gold_decision is the reference answer; gold_decision_supported says whether the (non-restricted) corpus genuinely supports a correct decision. expected_confidence_band is what the retrieved subgraph STRUCTURE should yield (high = dense, fresh, resolution-backed, contradiction-free; low = sparse, stale, contradictory, or resting on missing/restricted nodes).",
+  "queries": [
+    {
+      "id": "Q1",
+      "query": "what is the root cause of the SG settlement batch failures?",
+      "relevant_node_ids": ["INC-1001", "JIRA-4412", "JIRA-4399", "JIRA-4405", "RES-12"],
+      "gold_decision": "Root cause is database connection-pool exhaustion during SG regional failover: the connection pool is not failover-aware, stale connections to the demoted primary are not evicted, the pool saturates, and the settlement batch times out acquiring connections. Fixed in RES-12.",
+      "gold_decision_supported": true,
+      "expected_confidence_band": "high"
+    },
+    {
+      "id": "Q2",
+      "query": "how was the SG settlement batch timeout fixed?",
+      "relevant_node_ids": ["RES-12", "JIRA-4420", "JIRA-4421", "JIRA-4412"],
+      "gold_decision": "Fixed via failover-aware connection-pool eviction (JIRA-4420), an increased max pool size with tuned timeouts (JIRA-4421), and failover-aware scheduler retries, all documented and verified in postmortem RES-12.",
+      "gold_decision_supported": true,
+      "expected_confidence_band": "high"
+    },
+    {
+      "id": "Q3",
+      "query": "summarize the SG settlement-batch incident and its resolution",
+      "relevant_node_ids": ["INC-1001", "JIRA-4412", "JIRA-4399", "RES-12", "JIRA-4420", "JIRA-4421"],
+      "gold_decision": "The SG payment-settlement batch failed intermittently due to connection-pool exhaustion on regional database failover (INC-1001 / JIRA-4412 / JIRA-4399). It was resolved with failover-aware pool eviction and a larger pool (JIRA-4420 / JIRA-4421), verified in postmortem RES-12.",
+      "gold_decision_supported": true,
+      "expected_confidence_band": "high"
+    },
+    {
+      "id": "Q4",
+      "query": "what monitoring should detect this issue in the future?",
+      "relevant_node_ids": ["JIRA-4415", "RES-12", "RUN-02"],
+      "gold_decision": "Add an alert on database connection-pool saturation (JIRA-4415), as recommended in postmortem RES-12 and reflected in the failover-aware runbook RUN-02.",
+      "gold_decision_supported": true,
+      "expected_confidence_band": "medium"
+    },
+    {
+      "id": "Q5",
+      "query": "were there prior occurrences of SG settlement delays before this incident?",
+      "relevant_node_ids": ["JIRA-4390", "CMT-08", "INC-1001"],
+      "gold_decision": "Yes. SG settlement delays occurred in the prior quarter (JIRA-4390), with the same symptoms (CMT-08); at the time they were mitigated by a manual restart rather than root-caused.",
+      "gold_decision_supported": true,
+      "expected_confidence_band": "medium"
+    },
+    {
+      "id": "Q6",
+      "query": "what is the recommended recovery procedure when the SG settlement batch hangs?",
+      "relevant_node_ids": ["RUN-02", "RUN-01", "RES-12"],
+      "gold_decision": "Follow the failover-aware recovery runbook RUN-02 (confirm failover, allow eviction to re-point the pool, verify utilisation, resume idempotently). This supersedes the legacy restart-only runbook RUN-01.",
+      "gold_decision_supported": true,
+      "expected_confidence_band": "medium"
+    },
+    {
+      "id": "Q7",
+      "query": "are the SG settlement failures caused by a firewall or network ACL change?",
+      "relevant_node_ids": ["JIRA-4408", "JIRA-4399", "CMT-03", "CMT-04", "CMT-01"],
+      "gold_decision": "No. The firewall/ACL hypothesis (JIRA-4408, CMT-04) is contradicted by the network team confirming no ACL changes (CMT-03) and by the connection-pool-exhaustion evidence (JIRA-4399, CMT-01). The supported root cause is pool exhaustion, not the firewall.",
+      "gold_decision_supported": true,
+      "expected_confidence_band": "low"
+    },
+    {
+      "id": "Q8",
+      "query": "should we just restart the settlement-batch service to fix the hang?",
+      "relevant_node_ids": ["RUN-01", "CMT-10", "RES-08"],
+      "gold_decision": "No. Restarting alone (legacy runbook RUN-01 / the timeout-bump mitigation RES-08) is a stale workaround that no longer reliably recovers the batch and can cause duplicate reconciliation (CMT-10); it is superseded by the failover-aware fix in RES-12 / RUN-02.",
+      "gold_decision_supported": true,
+      "expected_confidence_band": "low"
+    },
+    {
+      "id": "Q9",
+      "query": "what was the financial and SLA-credit impact of the SG settlement outage on the customer?",
+      "relevant_node_ids": ["JIRA-4416", "JIRA-4418"],
+      "gold_decision": "Cannot be determined from the accessible context: the customer and SLA-credit impact is held in restricted ticket JIRA-4416, which most roles cannot see; only the existence of an SLA breach and escalation (JIRA-4418) is visible.",
+      "gold_decision_supported": false,
+      "expected_confidence_band": "low"
+    },
+    {
+      "id": "Q10",
+      "query": "what is the upstream cause that triggered the connection-pool exhaustion in JIRA-4399?",
+      "relevant_node_ids": ["JIRA-4399", "JIRA-4300"],
+      "gold_decision": "Cannot be fully determined: JIRA-4399 attributes its upstream cause to JIRA-4300, but JIRA-4300 is not present in the corpus, so the chain is incomplete.",
+      "gold_decision_supported": false,
+      "expected_confidence_band": "low"
+    }
+  ]
+}

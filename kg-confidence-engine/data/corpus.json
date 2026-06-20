@@ -1,0 +1,495 @@
+{
+  "scenario": "Production payment-settlement batch failing intermittently in the Singapore (SG) region.",
+  "notes": "Synthetic Jira-style corpus with ground-truth structure. Seeded conditions: (1) a corroboration cluster around the connection-pool root cause and its fix RES-12; (2) contradiction pairs (firewall hypothesis vs pool-exhaustion evidence); (3) stale/superseded nodes (RUN-01, RES-08); (4) dangling references (JIRA-4300, DOC-99) that point to ids absent from the corpus; (5) restricted/hr_only nodes (RES-13, JIRA-4416, CMT-09) for the access layer.",
+  "nodes": [
+    {
+      "id": "INC-1001",
+      "type": "incident",
+      "title": "Production payment-settlement batch failing intermittently in SG region",
+      "body": "Critical incident. The nightly payment-settlement batch in the Singapore (SG) region is failing intermittently, leaving settlements in a pending state and breaching the regional SLA. Failures cluster around APAC business hours and appear correlated with regional database failover events. Multiple downstream teams are impacted. This is the central incident tracking the investigation and resolution.",
+      "status": "resolved",
+      "source_tier": "incident",
+      "date": "2026-03-12",
+      "author": "k.ong",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4412", "rel": "relates_to"},
+        {"target": "JIRA-4399", "rel": "relates_to"},
+        {"target": "JIRA-4407", "rel": "relates_to"},
+        {"target": "JIRA-4390", "rel": "relates_to"},
+        {"target": "RES-12", "rel": "resolved_by"}
+      ]
+    },
+    {
+      "id": "JIRA-4412",
+      "type": "ticket",
+      "title": "Settlement batch timeout in SG region",
+      "body": "The settlement batch job times out intermittently in the SG region. Logs show the job hanging while acquiring database connections, then aborting after the connection-acquisition timeout. The failures coincide with SG primary-to-standby database failover. This is the canonical engineering ticket for the incident. Resolved by the failover-aware connection handling delivered in RES-12.",
+      "status": "resolved",
+      "source_tier": "ticket",
+      "date": "2026-03-13",
+      "author": "a.sharma",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4399", "rel": "caused_by"},
+        {"target": "RES-12", "rel": "resolved_by"},
+        {"target": "INC-1001", "rel": "relates_to"},
+        {"target": "JIRA-4420", "rel": "relates_to"},
+        {"target": "JIRA-4421", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4399",
+      "type": "ticket",
+      "title": "DB connection pool exhausted during SG failover",
+      "body": "Root-cause ticket. During SG regional database failover the application connection pool is exhausted: connections to the old primary are not evicted and the pool saturates, so the settlement batch cannot acquire connections and times out. Pool saturation metrics confirm active connections hitting the configured maximum during failover windows. Resolved by RES-12.",
+      "status": "resolved",
+      "source_tier": "ticket",
+      "date": "2026-03-13",
+      "author": "r.gupta",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4300", "rel": "caused_by"},
+        {"target": "RES-12", "rel": "resolved_by"},
+        {"target": "JIRA-4405", "rel": "relates_to"},
+        {"target": "DOC-01", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4410",
+      "type": "ticket",
+      "title": "Duplicate: SG settlement timeouts recurring nightly",
+      "body": "Recurring nightly settlement timeouts reported in the SG region. After triage this was found to be the same failure as JIRA-4412 (connection-pool exhaustion on failover) and is tracked as a duplicate.",
+      "status": "resolved",
+      "source_tier": "ticket",
+      "date": "2026-03-14",
+      "author": "j.lim",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4412", "rel": "duplicate_of"},
+        {"target": "INC-1001", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4405",
+      "type": "ticket",
+      "title": "Connection-pool metrics spike during SG failover drills",
+      "body": "Observability ticket. During scheduled SG failover drills the database connection-pool utilisation spikes to 100% and connection-acquisition latency climbs sharply. This reproduces the saturation behaviour seen in production and corroborates the pool-exhaustion root cause in JIRA-4399.",
+      "status": "resolved",
+      "source_tier": "ticket",
+      "date": "2026-03-10",
+      "author": "r.gupta",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4399", "rel": "relates_to"},
+        {"target": "DOC-01", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4408",
+      "type": "ticket",
+      "title": "SG batch failures caused by firewall ACL change on DB port",
+      "body": "Hypothesis ticket claiming the SG settlement batch failures are caused by a firewall ACL change blocking the database port during the maintenance window, intermittently dropping connections. This hypothesis was investigated and not substantiated; it directly conflicts with the connection-pool-exhaustion evidence in JIRA-4399. Closed as wontfix after the network team found no ACL changes.",
+      "status": "wontfix",
+      "source_tier": "ticket",
+      "date": "2026-03-13",
+      "author": "m.chen",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4399", "rel": "contradicts"},
+        {"target": "INC-1001", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4407",
+      "type": "ticket",
+      "title": "Intermittent settlement failures only during APAC business hours",
+      "body": "Pattern-analysis ticket. The settlement failures are intermittent and occur predominantly during APAC business hours when load is highest and failover drills are scheduled. This timing pattern is consistent with load-induced connection-pool saturation during failover.",
+      "status": "resolved",
+      "source_tier": "ticket",
+      "date": "2026-03-11",
+      "author": "a.sharma",
+      "security_label": "internal",
+      "links": [
+        {"target": "INC-1001", "rel": "relates_to"},
+        {"target": "JIRA-4412", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4390",
+      "type": "ticket",
+      "title": "Prior occurrence: SG settlement delays in Q4",
+      "body": "Earlier occurrence of SG settlement delays observed in the previous quarter. At the time the issue was mitigated by a manual batch restart and not fully root-caused. It is a prior occurrence of the same class of failure later diagnosed as connection-pool exhaustion on failover.",
+      "status": "resolved",
+      "source_tier": "ticket",
+      "date": "2025-11-20",
+      "author": "j.lim",
+      "security_label": "internal",
+      "links": [
+        {"target": "INC-1001", "rel": "relates_to"},
+        {"target": "JIRA-4399", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4395",
+      "type": "ticket",
+      "title": "Settlement reconciliation mismatch after batch retries",
+      "body": "When the settlement batch retries after a timeout, some records are reconciled twice, producing a reconciliation mismatch. This is a downstream side effect of the non-failover-aware retry behaviour and is tracked alongside the main incident.",
+      "status": "in_progress",
+      "source_tier": "ticket",
+      "date": "2026-03-09",
+      "author": "m.chen",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4402", "rel": "relates_to"},
+        {"target": "INC-1001", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4402",
+      "type": "ticket",
+      "title": "Batch scheduler retries are not failover-aware",
+      "body": "The batch scheduler retries failed settlement runs immediately without accounting for an in-progress database failover, so retries hit the still-saturated connection pool and also fail. Making retries failover-aware is part of the fix delivered in RES-12.",
+      "status": "resolved",
+      "source_tier": "ticket",
+      "date": "2026-03-14",
+      "author": "r.gupta",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4399", "rel": "caused_by"},
+        {"target": "JIRA-4420", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4415",
+      "type": "ticket",
+      "title": "Add monitoring alert on connection-pool saturation",
+      "body": "Preventive action item. Add an alert that fires when the database connection-pool utilisation crosses a saturation threshold, so future failover-induced pool exhaustion is detected before the settlement batch fails. Tracked as a follow-up from postmortem RES-12.",
+      "status": "in_progress",
+      "source_tier": "ticket",
+      "date": "2026-03-18",
+      "author": "r.gupta",
+      "security_label": "internal",
+      "links": [
+        {"target": "RES-12", "rel": "relates_to"},
+        {"target": "JIRA-4399", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4416",
+      "type": "ticket",
+      "title": "Customer impact and SLA-credit assessment for SG settlement outage",
+      "body": "Restricted commercial ticket assessing the customer-facing impact of the SG settlement outage, including affected counterparties and the SLA-credit owed. Contains confidential customer and contractual information and is restricted to leads.",
+      "status": "open",
+      "source_tier": "ticket",
+      "date": "2026-03-15",
+      "author": "k.ong",
+      "security_label": "restricted",
+      "links": [
+        {"target": "INC-1001", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4418",
+      "type": "ticket",
+      "title": "Escalation: SG settlement SLA breach",
+      "body": "Escalation ticket raised because the SG settlement SLA was breached during the incident. Routes the commercial impact assessment to the restricted ticket JIRA-4416 and tracks management communication.",
+      "status": "open",
+      "source_tier": "ticket",
+      "date": "2026-03-15",
+      "author": "k.ong",
+      "security_label": "internal",
+      "links": [
+        {"target": "INC-1001", "rel": "relates_to"},
+        {"target": "JIRA-4416", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "JIRA-4420",
+      "type": "ticket",
+      "title": "Implement failover-aware connection-pool eviction",
+      "body": "Fix task. Implement failover-aware eviction so stale connections to the demoted primary are dropped promptly and the pool re-establishes connections to the new primary, preventing saturation during failover. Delivered as part of RES-12.",
+      "status": "resolved",
+      "source_tier": "ticket",
+      "date": "2026-03-17",
+      "author": "a.sharma",
+      "security_label": "internal",
+      "links": [
+        {"target": "RES-12", "rel": "resolved_by"},
+        {"target": "JIRA-4412", "rel": "blocks"}
+      ]
+    },
+    {
+      "id": "JIRA-4421",
+      "type": "ticket",
+      "title": "Increase max connection-pool size for SG cluster",
+      "body": "Fix task. Increase the maximum database connection-pool size for the SG cluster and tune acquisition timeouts to provide headroom during failover. Delivered alongside the eviction fix as part of RES-12.",
+      "status": "resolved",
+      "source_tier": "ticket",
+      "date": "2026-03-17",
+      "author": "a.sharma",
+      "security_label": "internal",
+      "links": [
+        {"target": "RES-12", "rel": "resolved_by"},
+        {"target": "JIRA-4420", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "RES-12",
+      "type": "resolution",
+      "title": "Postmortem: SG settlement batch failure — connection-pool exhaustion on failover",
+      "body": "Authoritative postmortem. Root cause: during SG regional database failover the application connection pool was not failover-aware; stale connections to the demoted primary were not evicted, the pool saturated, and the settlement batch timed out acquiring connections. Fix: failover-aware connection eviction (JIRA-4420), increased max pool size and tuned timeouts (JIRA-4421), and failover-aware scheduler retries (JIRA-4402). Verified in production with no further failures across subsequent failover events. Supersedes the earlier timeout-bump mitigation RES-08.",
+      "status": "verified",
+      "source_tier": "resolution",
+      "date": "2026-03-20",
+      "author": "k.ong",
+      "security_label": "internal",
+      "links": [
+        {"target": "RES-08", "rel": "supersedes"},
+        {"target": "DOC-99", "rel": "relates_to"},
+        {"target": "RUN-02", "rel": "relates_to"},
+        {"target": "JIRA-4412", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "RES-08",
+      "type": "resolution",
+      "title": "Earlier mitigation: increase settlement batch timeout",
+      "body": "Earlier, partial mitigation that simply increased the settlement batch's connection-acquisition timeout. This reduced the frequency of failures but did not address the underlying pool exhaustion, so failures still occurred under longer failover events. Superseded by the proper failover-aware fix in RES-12.",
+      "status": "deprecated",
+      "source_tier": "resolution",
+      "date": "2025-09-02",
+      "author": "m.chen",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4412", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "RES-13",
+      "type": "resolution",
+      "title": "Vendor RCA: managed-database failover connection-handling defect (confidential)",
+      "body": "Restricted vendor root-cause analysis confirming a connection-handling defect in the managed-database failover path that leaves client connections pointing at the demoted primary. Corroborates the internal pool-exhaustion diagnosis. Contains confidential vendor contractual detail and is restricted to leads.",
+      "status": "verified",
+      "source_tier": "resolution",
+      "date": "2026-03-19",
+      "author": "v.rao",
+      "security_label": "restricted",
+      "links": [
+        {"target": "RES-12", "rel": "relates_to"},
+        {"target": "JIRA-4399", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "RES-15",
+      "type": "resolution",
+      "title": "Postmortem review sign-off for SG settlement incident",
+      "body": "Formal review sign-off confirming the postmortem RES-12 findings and that the failover-aware fixes were validated and closed. Records the approval of the corrective and preventive actions.",
+      "status": "verified",
+      "source_tier": "resolution",
+      "date": "2026-03-22",
+      "author": "k.ong",
+      "security_label": "internal",
+      "links": [
+        {"target": "RES-12", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "RUN-01",
+      "type": "runbook",
+      "title": "Runbook: restart settlement-batch service on hang",
+      "body": "Legacy runbook instructing on-call engineers to restart the settlement-batch service whenever it hangs. This is a stale mitigation that does not address failover-induced pool exhaustion and can cause duplicate reconciliation on retry. Superseded by the failover-aware recovery runbook RUN-02.",
+      "status": "deprecated",
+      "source_tier": "runbook",
+      "date": "2024-06-10",
+      "author": "j.lim",
+      "security_label": "internal",
+      "links": [
+        {"target": "INC-1001", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "RUN-02",
+      "type": "runbook",
+      "title": "Runbook: SG failover-aware settlement recovery",
+      "body": "Current runbook for recovering the SG settlement batch. Steps: confirm whether a database failover is in progress, allow failover-aware connection eviction to re-point the pool, verify pool utilisation has recovered, then resume the batch idempotently to avoid duplicate reconciliation. Supersedes the legacy restart-only runbook RUN-01.",
+      "status": "verified",
+      "source_tier": "runbook",
+      "date": "2026-03-21",
+      "author": "r.gupta",
+      "security_label": "internal",
+      "links": [
+        {"target": "RUN-01", "rel": "supersedes"},
+        {"target": "RES-12", "rel": "relates_to"},
+        {"target": "DOC-01", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "DOC-01",
+      "type": "doc",
+      "title": "Reference: SG region database failover architecture",
+      "body": "Reference documentation describing the SG region database high-availability and failover architecture: primary/standby topology, failover triggers, and expected client reconnection behaviour. Useful background for understanding why a non-failover-aware connection pool saturates.",
+      "status": "verified",
+      "source_tier": "doc",
+      "date": "2025-08-01",
+      "author": "n.tan",
+      "security_label": "public",
+      "links": [
+        {"target": "DOC-02", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "DOC-02",
+      "type": "doc",
+      "title": "Reference: settlement batch design and SLA",
+      "body": "Reference documentation describing the payment-settlement batch design, its scheduling, database access patterns, and the regional SLA targets it must meet. Provides context for the impact of settlement timeouts.",
+      "status": "verified",
+      "source_tier": "doc",
+      "date": "2025-07-15",
+      "author": "n.tan",
+      "security_label": "public",
+      "links": []
+    },
+    {
+      "id": "CMT-01",
+      "type": "comment",
+      "title": "Comment on JIRA-4399: active connections hit max during failover",
+      "body": "During the last failover window I watched active database connections climb to the configured maximum and stay pinned there for several minutes while the batch failed to acquire connections. This strongly supports the pool-exhaustion theory.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2026-03-13",
+      "author": "r.gupta",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4399", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "CMT-02",
+      "type": "comment",
+      "title": "Comment on JIRA-4412: larger pool fixed it in staging",
+      "body": "We increased the connection-pool size and added eviction in staging and reproduced a failover with no settlement timeouts. The fix looks effective.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2026-03-16",
+      "author": "a.sharma",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4412", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "CMT-03",
+      "type": "comment",
+      "title": "Comment on JIRA-4408: network team confirms no ACL changes",
+      "body": "The network team reviewed the change log for the maintenance window and confirmed there were no firewall ACL changes affecting the database port. This rules out the firewall hypothesis.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2026-03-13",
+      "author": "n.tan",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4408", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "CMT-04",
+      "type": "comment",
+      "title": "Comment on JIRA-4408: I still think it's the firewall",
+      "body": "I'm not convinced it's the connection pool — the timing lines up with the maintenance window and I think a firewall or network ACL change is intermittently dropping the database connections. This conflicts with the pool-exhaustion evidence reported elsewhere.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2026-03-13",
+      "author": "m.chen",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4408", "rel": "relates_to"},
+        {"target": "CMT-01", "rel": "contradicts"}
+      ]
+    },
+    {
+      "id": "CMT-05",
+      "type": "comment",
+      "title": "Comment on RES-12: matches what we saw in production",
+      "body": "The postmortem's root cause matches the production telemetry exactly — pool saturation during failover and recovery once eviction is in place. Agree with the conclusion.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2026-03-20",
+      "author": "j.lim",
+      "security_label": "internal",
+      "links": [
+        {"target": "RES-12", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "CMT-06",
+      "type": "comment",
+      "title": "Comment on RES-12: tracking the action items",
+      "body": "Logging the postmortem action items: ship failover-aware eviction, raise pool size, add saturation alerting, and update the recovery runbook. Owners assigned.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2026-03-20",
+      "author": "k.ong",
+      "security_label": "internal",
+      "links": [
+        {"target": "RES-12", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "CMT-07",
+      "type": "comment",
+      "title": "Comment on JIRA-4407: failures track APAC peak load",
+      "body": "Plotted the failures against load — they cluster tightly during APAC peak hours, which is also when the scheduled failover drills run. Consistent with load-plus-failover saturation.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2026-03-11",
+      "author": "a.sharma",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4407", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "CMT-08",
+      "type": "comment",
+      "title": "Comment on JIRA-4390: same symptoms last quarter",
+      "body": "These symptoms look identical to the SG settlement delays we had last quarter that we just restarted our way out of. We should have root-caused it then.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2025-11-21",
+      "author": "j.lim",
+      "security_label": "internal",
+      "links": [
+        {"target": "JIRA-4390", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "CMT-09",
+      "type": "comment",
+      "title": "On-call staffing gap during the incident (HR)",
+      "body": "HR-restricted note recording that the on-call rotation had a staffing gap during the incident window due to approved leave, which delayed initial response. Contains personnel information and is restricted to HR.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2026-03-14",
+      "author": "h.wong",
+      "security_label": "hr_only",
+      "links": [
+        {"target": "INC-1001", "rel": "relates_to"}
+      ]
+    },
+    {
+      "id": "CMT-10",
+      "type": "comment",
+      "title": "Comment on RUN-01: restarting no longer works",
+      "body": "Heads up — just restarting the batch service per the old runbook no longer reliably recovers things after a failover and can cause duplicate reconciliation. Use the new failover-aware runbook instead.",
+      "status": "open",
+      "source_tier": "comment",
+      "date": "2026-03-21",
+      "author": "r.gupta",
+      "security_label": "internal",
+      "links": [
+        {"target": "RUN-01", "rel": "relates_to"}
+      ]
+    }
+  ]
+}
