@@ -47,11 +47,13 @@ class ConfidenceResult:
     score: float
     band: str
     breakdown: dict[str, dict]  # feature -> {value, weight, contribution}
+    subtotal: float = 0.0       # sum of feature contributions (pre-gate)
+    sufficiency: float = 1.0    # evidential-sufficiency gate in [0,1]
     gap_report: list[dict] = field(default_factory=list)
 
     def reconstruct(self) -> float:
-        """Sum of contributions (pre-clamp) — for verifying reproducibility."""
-        return sum(f["contribution"] for f in self.breakdown.values())
+        """score = (sum of contributions) x sufficiency — verifies reproducibility."""
+        return sum(f["contribution"] for f in self.breakdown.values()) * self.sufficiency
 
 
 def band_for(score: float) -> str:
@@ -80,12 +82,21 @@ def score_confidence(G: nx.DiGraph, decision: DecisionResult) -> ConfidenceResul
             "weight": w,
             "contribution": round(val * w, 4),
         }
-    raw = sum(f["contribution"] for f in breakdown.values())
-    score = max(0.0, min(1.0, raw))
+    subtotal = sum(f["contribution"] for f in breakdown.values())
+    # Evidential-sufficiency gate: confidence is capped when too few independent
+    # corroborating supports exist, regardless of how fresh/high-tier they are.
+    # This encodes the thesis (sparse support => not trustworthy) and fixes the
+    # perverse "tiny but healthy subgraph => high confidence" case (e.g. an
+    # access-restricted role left with only a couple of generic docs).
+    n_connected = sum(1 for n in G if G.degree(n) >= 1)
+    sufficiency = min(1.0, n_connected / 6.0)
+    score = max(0.0, min(1.0, subtotal * sufficiency))
     return ConfidenceResult(
         score=round(score, 4),
         band=band_for(score),
         breakdown=breakdown,
+        subtotal=round(subtotal, 4),
+        sufficiency=round(sufficiency, 4),
         gap_report=_gap_report(G, decision),
     )
 
@@ -188,8 +199,10 @@ if __name__ == "__main__":
     for feat, d in conf.breakdown.items():
         print(f"{feat:<20} {d['value']:>8.3f} {d['weight']:>+8.2f} {d['contribution']:>+9.3f}")
     print("-" * 48)
-    print(f"{'sum (reconstruct)':<20} {'':>8} {'':>8} {conf.reconstruct():>+9.3f}")
-    print(f"{'clamped score':<20} {'':>8} {'':>8} {conf.score:>9.3f}")
+    print(f"{'subtotal':<20} {'':>8} {'':>8} {conf.subtotal:>+9.3f}")
+    print(f"{'x sufficiency gate':<20} {'':>8} {'':>8} {conf.sufficiency:>9.3f}")
+    print(f"{'= score':<20} {'':>8} {'':>8} {conf.score:>9.3f}")
+    print(f"(reconstruct check: {conf.reconstruct():.3f})")
     print("\nGAP REPORT:")
     for g in conf.gap_report:
         print(f"  [{g['type']}] {g['detail']}")

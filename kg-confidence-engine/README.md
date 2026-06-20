@@ -119,8 +119,11 @@ so it reconstructs by hand from the breakdown. Example (root-cause query):
 | coverage | 0.56 | −0.15 | −0.084 |
 | **score** | | | **0.809 → HIGH** |
 
-Plus a structured **gap report** (contradictions, dangling references, stale
-nodes, uncited claims) — the "what we don't know" surface.
+The additive subtotal is then multiplied by an **evidential-sufficiency gate**
+(`min(1, connected_nodes/6)`): a tiny subgraph cannot yield high confidence
+however fresh/high-tier its few nodes are. `score = subtotal × sufficiency`, still
+fully reconstructable. Plus a structured **gap report** (contradictions, dangling
+references, stale nodes, uncited claims) — the "what we don't know" surface.
 
 **Band alignment on the eval set (default role, extractive decision):** 6/10
 predicted bands match the labels; the HIGH band is identified cleanly (high
@@ -131,6 +134,30 @@ answerable (not low); under an `intern` role it drops to low (shown in Phase 6).
 Note: `citation_integrity` is degenerate (≈1.0) under the extractive fallback,
 so discrimination here comes from the structural features; with real LLM
 synthesis it also penalizes uncited/hallucinated claims.
+
+### Access control (Phase 6) — filtering as sub-graph removal
+
+Roles map to security-label clearances (`intern → {public}`,
+`engineer → {public, internal}`, `lead → +restricted`, `hr → +hr_only`).
+Filtering happens at the **corpus/retrieval boundary**, so a forbidden node never
+enters retrieval, the context map, the LLM prompt, or the confidence score — and
+a link to a now-invisible node becomes a dangling gap for that role. Enforcement
+is in **code, not in the prompt**: prompt-level access control is trivially
+prompt-injectable, and the reference model requires that the query engine
+literally cannot see the node.
+
+Same query, different role (measured):
+
+| Query | intern | engineer | lead |
+|---|---|---|---|
+| *root cause?* | 0.222 (LOW) | 0.590 (MED) | 0.670 (HIGH) |
+| *customer SLA-credit impact?* | 0.222 (LOW) | 0.638 (HIGH) | 0.639 (HIGH) |
+
+The intern (only 2 public docs visible) is correctly LOW. For the root-cause
+query, the **lead is HIGH while the engineer is only MEDIUM** — because the
+restricted vendor RCA `RES-13` corroborates the root cause and only the lead can
+see it. This is the access requirement and a confidence-from-structure result in
+one demo beat.
 
 *(Calibration/ECE and thesis-validation results land in Phase 7.)*
 
