@@ -83,11 +83,27 @@ Embedding backend: `hashing-tfidf` (MiniLM fallback — see note above).
 Hybrid is competitive with the better single retriever and beats keyword.
 Note on P@5: several eval queries have fewer than 5 truly-relevant nodes, so
 P@5 is structurally capped below 1.0 for those; **R@5 is the more informative
-metric** for this corpus. The graph-adjacency re-rank (Phase 3) is measured as a
-lift *on top of* this hybrid baseline.
+metric** for this corpus.
 
-*(Graph-lift, calibration/ECE, and thesis-validation results land in Phases 3
-and 7.)*
+### Graph lift (Phase 3) — re-rank by subgraph hub-ness
+
+The retrieved set is assembled into a context map (in-memory `networkx.DiGraph`
+with typed edges); each candidate is re-ranked by its **hub-ness** (in-degree
+within the subgraph — how many other retrieved references point at it). Measured
+against the plain hybrid baseline (pool=12, α=0.6, mean over the eval set):
+
+| Retriever | P@5 | R@5 |
+|-----------|-----|-----|
+| hybrid (RRF) | 0.360 | 0.517 |
+| **hybrid + graph-boost** | **0.460** | **0.707** |
+| **lift** | **+0.100** | **+0.190** |
+
+This is the empirical version of GBrain's graph-over-vector claim: a real,
+measured improvement from using the structure of the retrieved subgraph. The top
+hub for the root-cause query is the postmortem `RES-12` (in-degree 7), i.e. the
+node the most other references corroborate.
+
+*(Calibration/ECE and thesis-validation results land in Phase 7.)*
 
 ## Out of scope (named deliberately)
 
