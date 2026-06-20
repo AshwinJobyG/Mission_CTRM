@@ -60,10 +60,26 @@ improves) once MiniLM weights are available.*
 ## Run
 
 ```bash
-python -m src.corpus            # corpus stats + seeded-condition checklist
-python -m src.retrieval         # sample retrieval for one query
-python -m src.eval_retrieval    # P@5 / R@5 table
+python -m src.corpus              # corpus stats + seeded-condition checklist
+python -m src.retrieval           # sample retrieval for one query
+python -m src.eval_retrieval      # P@5 / R@5 table
+python -m src.graph_builder       # context map + signals + graph lift
+python -m src.decision            # grounded, cited decision for a sample query
+python -m src.confidence          # confidence breakdown (reconstructable)
+python -m src.access              # role contrast (intern vs lead)
+python -m src.eval_confidence full  # calibration + ECE + thesis validation (plots)
+streamlit run app/streamlit_app.py  # the demo UI
 ```
+
+## Demo UI (Phase 8)
+
+One screen walks the whole thesis: query + role selector → **Stage 1** retrieved
+references (search) → **Stage 2** interactive `pyvis` context map (node size =
+hub-ness, colour = source tier, thick border = cited, red edges = contradictions)
+→ **Stage 3** grounded decision with inline citations (think) → **Stage 4**
+confidence score with its feature-contribution bar chart and the gap report.
+Switching role visibly changes the context map and the confidence. A second tab
+surfaces the Phase 7 rigor (calibration diagram, thesis plot, retrieval table).
 
 ## Results
 

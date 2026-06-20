@@ -17,5 +17,5 @@ anthropic>=0.40
 matplotlib>=3.7   # numpy already pulled in above
 
 # Phase 8: demo UI
-# streamlit>=1.36
-# pyvis>=0.3
+streamlit>=1.36
+pyvis>=0.3
